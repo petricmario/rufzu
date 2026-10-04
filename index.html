@@ -86,17 +86,103 @@ async function getRoute(a,b){
  const j=await r.json(); if(!j.routes?.length) throw new Error('Keine Straßenroute gefunden');
  return j.routes.sort((x,y)=>x.distance-y.distance)[0];
 }
-/* Keine erfundene Tarifzonen-Geometrie.
-   Die KMZ enthält die 536 Haltestellen, aber keine Tarifzonen-Polygone.
-   Deshalb wird hier keine falsche Zone aus künstlichen Punkten abgeleitet. */
-function showOfficialZoneNotice(){
-  document.getElementById('zoneText').innerHTML='<b>Tarifzone wird offiziell ermittelt.</b>';
-  document.getElementById('zonePath').textContent='Für eine verbindliche Zonenzahl bitte die offizielle Kärntner-Linien-Preisauskunft verwenden.';
+/* Offizielle Kärntner-Linien/HAFAS-Abfrage.
+   Die Zonenzahl wird NICHT aus Kilometern oder Luftlinie abgeleitet.
+   Zuerst werden die beiden Haltestellen im offiziellen HAFAS-System aufgelöst,
+   danach wird die offizielle Verbindung inkl. Tarifdaten abgefragt. */
+const HAFAS_ENDPOINT='https://routenplaner.kaerntner-linien.at/bin/mgate.exe';
+const HAFAS_AUTH={type:'AID',aid:'wf7mcf9bv3nv8g5f'};
+const HAFAS_CLIENT={type:'WEB',id:'VAO',name:'webapp'};
+
+async function hafasRequest(svcReqL){
+  const body={id:Math.random().toString(36).slice(2,18),ver:'1.20',lang:'deu',auth:HAFAS_AUTH,client:HAFAS_CLIENT,formatted:false,ext:'VAO.11',svcReqL};
+  const r=await fetch(HAFAS_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok) throw new Error('Offizielle Tarifauskunft nicht erreichbar ('+r.status+')');
+  const j=await r.json();
+  const svc=j.svcResL?.[0];
+  if(!svc || svc.err && svc.err!=='OK') throw new Error(svc?.err||'Keine Antwort der Tarifauskunft');
+  return svc.res;
 }
-function fareBox(){
-  document.getElementById('fareBox').innerHTML='<div class="faregrid">'+[
-    ['Normal',2.10],['Senioren',1.50],['Sparpreis',1.20],['100% Ermäßigung',0.00]
-  ].map(([label,base])=>'<div class="fareitem"><b>'+label+'</b><div class="fareline"><span>Ruf:Zu-Tarif</span><strong>'+base.toFixed(2).replace('.',',')+' €</strong></div><div class="fareline"><span>Komfortzuschlag</span><strong>2,00 €</strong></div><div class="fareline total"><span>Gesamt</span><strong>'+ (base+2).toFixed(2).replace('.',',')+' €</strong></div></div>').join('')+'</div><div class="muted" style="margin-top:9px">Ruf:Zu-Komfortzuschlag: 2,00 € pro Fahrt. Der Kärntner-Linien-Regionaltarif wird separat über die offizielle Preisauskunft bestimmt.</div>';
+
+async function hafasFindStop(stop){
+  const res=await hafasRequest([{id:'1|1|',meth:'LocMatch',req:{input:{field:'S',loc:{name:stop.name},maxLoc:5}}}]);
+  const list=res?.match?.locL||[];
+  if(!list.length) throw new Error('Haltestelle nicht gefunden: '+stop.name);
+  // Bei unseren Ruf:Zu-Namen zuerst möglichst den exakten Namen nehmen.
+  const exact=list.find(x=>String(x.name||'').toLowerCase()===String(stop.name||'').toLowerCase());
+  return exact||list[0];
+}
+
+function deepCollectFareText(obj,out=[]){
+  if(!obj||typeof obj!=='object') return out;
+  if(Array.isArray(obj)){obj.forEach(x=>deepCollectFareText(x,out));return out;}
+  for(const [k,v] of Object.entries(obj)){
+    if(typeof v==='string' && /fare|ticket|zone|tarif|einzel/i.test(k)) out.push(v);
+    if(typeof v==='object') deepCollectFareText(v,out);
+  }
+  return out;
+}
+function extractZoneCount(obj){
+  const texts=deepCollectFareText(obj,[]);
+  for(const t of texts){
+    let m=String(t).match(/(?:^|\b)(\d{1,2})\s*(?:tarif)?zonen?\b/i);
+    if(m) return Number(m[1]);
+    m=String(t).match(/\bzone\s*(\d{1,2})\b/i);
+    if(m) return Number(m[1]);
+  }
+  return null;
+}
+function extractFareRows(obj){
+  const rows=[];
+  function walk(x){
+    if(!x||typeof x!=='object')return;
+    if(Array.isArray(x)){x.forEach(walk);return;}
+    if(Array.isArray(x.fareL)){
+      x.fareL.forEach(f=>{
+        if(f&&typeof f==='object'&&typeof f.prc==='number') rows.push({name:f.name||'',desc:f.desc||'',price:f.prc/100});
+      });
+    }
+    if(Array.isArray(x.ticketL)){
+      x.ticketL.forEach(f=>{if(f&&typeof f==='object'&&typeof f.prc==='number')rows.push({name:f.name||'',desc:f.desc||'',price:f.prc/100});});
+    }
+    Object.values(x).forEach(walk);
+  }
+  walk(obj); return rows;
+}
+
+async function getOfficialTariff(a,b){
+  const [fromLoc,toLoc]=await Promise.all([hafasFindStop(a),hafasFindStop(b)]);
+  const res=await hafasRequest([{id:'1|1|',meth:'TripSearch',req:{depLocL:[fromLoc],arrLocL:[toLoc],getPasslist:false,numF:5,maxChg:-1,jnyFltrL:[{type:'PROD',mode:'INC',value:'1111111111111111'}]}}]);
+  const journeys=res?.outConL||[];
+  if(!journeys.length) throw new Error('Keine offizielle Verbindung gefunden.');
+  const fares=[];
+  journeys.forEach(j=>{extractFareRows(j).forEach(f=>fares.push(f));});
+  const zone=extractZoneCount(journeys[0]);
+  return {zone,journey:journeys[0],fares};
+}
+
+function showOfficialZoneNotice(){
+  document.getElementById('zoneText').innerHTML='<b>Offizielle Tarifzonen werden abgefragt …</b>';
+  document.getElementById('zonePath').textContent='Die Zonen werden von der Kärntner-Linien-Auskunft bestimmt – nicht aus Kilometern.';
+}
+function fareBoxLoading(){
+  document.getElementById('fareBox').innerHTML='<div class="muted">⏳ Offiziellen Kärntner-Linien-Tarif wird geladen …</div>';
+}
+function fareBoxForZone(z){
+  const n=TARIF_2026.normal[z-1],s=TARIF_2026.senior[z-1],sp=TARIF_2026.spar[z-1],f=TARIF_2026.family[z-1];
+  if(n==null)return '<div class="warn">Für '+z+' Zonen ist kein Tarif in der eingebauten aktuellen Preistabelle vorhanden.</div>';
+  return '<div class="faregrid">'+[
+    ['Normal',n],['Senioren',s],['Sparpreis',sp],['Familien',f]
+  ].map(([label,base])=>'<div class="fareitem"><b>'+label+'</b><div class="fareline"><span>Kärntner Linien</span><strong>'+fmtEuro(base)+'</strong></div><div class="fareline"><span>Ruf:Zu Komfort</span><strong>2,00 €</strong></div><div class="fareline total"><span>Ruf:Zu gesamt</span><strong>'+fmtEuro(base+2)+'</strong></div></div>').join('')+'</div><div class="muted" style="margin-top:9px">Aktuelle Tarifbasis: gültig ab 01.07.2026. Ruf:Zu berechnet zusätzlich 2,00 € Komfortzuschlag.</div>';
+}
+function fareBoxOfficial(fares,z){
+  let html='';
+  if(z) html+=fareBoxForZone(z);
+  const useful=(fares||[]).filter(x=>/einzel|single|normal|regeltarif/i.test((x.name+' '+x.desc)));
+  if(useful.length){
+    html+='<div class="muted" style="margin-top:9px"><b>Offizielle Auskunft:</b> '+useful.slice(0,4).map(x=>esc(x.name||x.desc)+' '+fmtEuro(x.price)).join(' · ')+'</div>';
+  }
+  return html||'<div class="warn">Die offizielle Verbindung wurde gefunden, aber die Tarifdetails konnten aus der Antwort nicht ausgelesen werden. Bitte die offizielle Preisauskunft öffnen.</div>';
 }
 async function showTripFixed(){
  if(!selected.from||!selected.to){alert('Bitte Von und Nach auswählen.');return}
@@ -105,20 +191,33 @@ async function showTripFixed(){
  document.getElementById('routeText').innerHTML='<b>Von:</b> '+esc(a.name)+'<br><b>Nach:</b> '+esc(b.name);
  const nav=`https://www.google.com/maps/dir/?api=1&origin=${a.lat},${a.lon}&destination=${b.lat},${b.lon}&travelmode=driving`;
  document.getElementById('nav').href=nav;
+ document.getElementById('navWeb').href=nav;
  document.getElementById('distanceText').textContent='Berechne …';
  showOfficialZoneNotice();
- fareBox();
+ fareBoxLoading();
  try{
-   const route=await getRoute(a,b);
+   const [route,tariff]=await Promise.all([getRoute(a,b),getOfficialTariff(a,b)]);
    const km=route.distance/1000;
    document.getElementById('distanceText').textContent=km.toFixed(1).replace('.',',')+' km';
-   document.getElementById('distanceNote').textContent='Kürzeste gefundene Straßenroute; Google Maps kann für die Navigation wegen Verkehr eine andere Route wählen.';
+   document.getElementById('distanceNote').textContent='Straßenentfernung nur zur Information. Sie bestimmt NICHT die Tarifzonen.';
    if(routeLine) map.removeLayer(routeLine);
    routeLine=L.geoJSON(route.geometry,{style:{weight:5,opacity:.8}}).addTo(map);
    map.fitBounds(routeLine.getBounds(),{padding:[20,20]});
+   if(tariff.zone){
+     document.getElementById('zoneText').innerHTML='<b>'+tariff.zone+' '+(tariff.zone===1?'Zone':'Zonen')+'</b> – offizielle Tarifermittlung';
+     document.getElementById('zonePath').textContent='Diese Zonenzahl stammt aus der offiziellen Kärntner-Linien-Verbindung, nicht aus der Straßenentfernung.';
+     document.getElementById('fareBox').innerHTML=fareBoxOfficial(tariff.fares,tariff.zone);
+   }else{
+     document.getElementById('zoneText').innerHTML='<b>Offizielle Verbindung gefunden, Zonenzahl nicht im HAFAS-Ergebnis geliefert.</b>';
+     document.getElementById('zonePath').textContent='Zur Sicherheit keine Zone geraten. Bitte offizielle Preisauskunft öffnen.';
+     document.getElementById('fareBox').innerHTML=fareBoxOfficial(tariff.fares,null);
+   }
  }catch(e){
    document.getElementById('distanceText').textContent='nicht verfügbar';
-   document.getElementById('distanceNote').textContent='Die Straßenroute konnte nicht automatisch ermittelt werden.';
+   document.getElementById('distanceNote').textContent='Die Straßenroute oder offizielle Tarifabfrage war nicht erreichbar.';
+   document.getElementById('zoneText').innerHTML='<b>Automatische offizielle Tarifabfrage nicht erreichbar.</b>';
+   document.getElementById('zonePath').textContent='Es wird bewusst keine Zone geschätzt.';
+   document.getElementById('fareBox').innerHTML='<div class="warn">'+esc(e.message||'Fehler')+'<br><br>Bitte die offizielle Kärntner-Linien-Preisauskunft verwenden.</div>';
  }
 }
 // override the old button handler without changing the 536-stop dataset
