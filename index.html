@@ -52,11 +52,36 @@ function showSelectedFare(){
   if(!z){out.textContent='';return}
   out.innerHTML=`<b>${z} ${z===1?'Zone':'Zonen'}:</b> Normal ${fmtEuro(TARIF_2026.normal[z-1])} + 2,00 € Komfort = <b>${fmtEuro(TARIF_2026.normal[z-1]+2)}</b><br>Senior ${fmtEuro(TARIF_2026.senior[z-1])} + 2,00 € = <b>${fmtEuro(TARIF_2026.senior[z-1]+2)}</b><br>Sparpreis ${fmtEuro(TARIF_2026.spar[z-1])} + 2,00 € = <b>${fmtEuro(TARIF_2026.spar[z-1]+2)}</b>`;
 }
-function openMapsApp(e){
+async function openMapsApp(e){
   e.preventDefault();
   if(!selected.from||!selected.to){alert('Bitte zuerst Von und Nach auswählen.');return}
   const a=selected.from,b=selected.to;
-  const intent='intent://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(a.lat+','+a.lon)+'&destination='+encodeURIComponent(b.lat+','+b.lon)+'&travelmode=driving#Intent;scheme=https;package=com.google.android.apps.maps;end';
+
+  // Google Maps kann eine aktive Turn-by-Turn-Navigation per Maps-URL
+  // nur dann direkt starten, wenn der Startpunkt der aktuelle Standort
+  // bzw. nahe daran ist. Deshalb prüfen wir zuerst den aktuellen GPS-Standort.
+  let useCurrentLocation=false;
+  try{
+    const pos=await new Promise((resolve,reject)=>{
+      if(!navigator.geolocation) return reject(new Error('GPS nicht verfügbar'));
+      navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:8000,maximumAge:15000});
+    });
+    const here={lat:pos.coords.latitude,lon:pos.coords.longitude};
+    useCurrentLocation=hav(here,a)<=0.25; // bis ca. 250 m vom ausgewählten Startpunkt
+  }catch(err){}
+
+  let url;
+  if(useCurrentLocation){
+    // Kein origin: Google Maps verwendet den aktuellen Gerätestandort und
+    // kann dadurch die aktive Navigation direkt starten.
+    url='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(b.lat+','+b.lon)+'&travelmode=driving&dir_action=navigate';
+  }else{
+    // Nicht am ausgewählten Startpunkt: Google Maps darf laut offizieller
+    // Maps-URL-Spezifikation nur eine Routenvorschau anzeigen.
+    url='https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(a.lat+','+a.lon)+'&destination='+encodeURIComponent(b.lat+','+b.lon)+'&travelmode=driving';
+  }
+
+  const intent='intent://'+url.replace('https://','')+'#Intent;scheme=https;package=com.google.android.apps.maps;end';
   window.location.href=intent;
 }
 function setMapWebLink(){
