@@ -166,7 +166,6 @@ async function showTripFixed(){
  document.getElementById('routeText').innerHTML='<b>Von:</b> '+esc(a.name)+'<br><b>Nach:</b> '+esc(b.name);
  const nav=`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(a.lat+','+a.lon)}&destination=${encodeURIComponent(b.lat+','+b.lon)}&travelmode=driving&dir_action=navigate`;
  document.getElementById('nav').href=nav;
- document.getElementById('navWeb').href=nav;
  document.getElementById('distanceText').textContent='Berechne …';
  const verified=verifiedZoneCount(a,b);
  // Tarifzonenzahl sofort anzeigen, damit ein Fehler beim Straßenrouting
