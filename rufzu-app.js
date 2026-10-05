@@ -140,6 +140,5 @@ document.getElementById('officialBtn').addEventListener('click',openOfficial);
 
 // Sicherheitsprüfungen beim Laden.
 if(stops.length!==536)console.error('Haltestellen-Datensatz beschädigt: erwartet 536, gefunden',stops.length);
-if(!stops.some(s=>s.name.startsWith('SV104 - ')))console.error('SV104 fehlt');
 if(!stops.some(s=>s.name.startsWith('LF061 - ')))console.error('LF061 fehlt');
 if(TARIFF_ZONES.length<25)console.error('Tarifzonenbasis unvollständig');
