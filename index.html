@@ -144,10 +144,10 @@ const TARIFF_ZONES=[
  ['33553','Zollfeld',46.70811,14.36583],['33553','Tanzenberg/Hörzendorf',46.72400,14.34100],
  ['34551','Maria Saal',46.68440,14.34228],['34551','Karnburg/Poppichl',46.68000,14.31500],['34551','Walddorf',46.66400,14.31600],
  // Frauenstein / St. Georgen area
- ['33259','St.Georgen am Längsee',46.77113,14.42053],['33259','Drasendorf',46.79700,14.43500],['33259','Bernaich',46.80100,14.41200],['33259','Krottendorf/Goggerwenig',46.76300,14.40700],
+ ['33259','St.Georgen am Längsee',46.77113,14.42053],['33259','Krottendorf/Goggerwenig',46.76300,14.40700],['33259','Niederosterwitz/Reipersdorf',46.77000,14.40000],
+ ['33245','Hunnenbrunn',46.78317,14.37764],['33245','Drasendorf Abzweigung',46.811613,14.424657],['33245','Bernaich',46.804785,14.409325],['33245','Siebenaich',46.8004834,14.3982644],
  ['33257','Launsdorf',46.76700,14.45300],['33257','Pölling',46.78150,14.47450],['33257','Weindorf',46.78800,14.46500],['33257','Gösseling',46.77300,14.48600],
  ['33262','Kraig',46.81772,14.35962],['33262','Überfeld/Pörlinghof',46.79800,14.37400],
- ['33245','Hunnenbrunn',46.78317,14.37764],['33245','Siebenaich',46.79400,14.39400],
  ['33260','Pisweg',46.83764,14.29370],['33261','Wimitz',46.82462,14.32187],
  ['33241','Meiselding-Dürnfeld',46.79000,14.30000],['33532','Dreifaltigkeit',46.80499,14.28683],['33531','Steinbichl',46.80728,14.23498],
  ['34431','Magdalensberg',46.70800,14.40000],['34432','Ottmanach',46.73000,14.43000],['34433','Lassendorf',46.70000,14.43000],['34435','Gottesbichl',46.69000,14.40000],['34434','Salchendorf',46.69000,14.45000],['34441','Poggersdorf',46.68000,14.50000],['32451','Tainach',46.69000,14.52000]
@@ -158,6 +158,19 @@ const ZONE_CACHE_KEY='rufzu-zone-cache-v4';
 let zoneCache={};try{zoneCache=JSON.parse(localStorage.getItem(ZONE_CACHE_KEY)||'{}')||{}}catch(e){zoneCache={}};
 function haversineKm(a,b){const R=6371,p=Math.PI/180,dLat=(b.lat-a.lat)*p,dLon=(b.lon-a.lon)*p;const x=Math.sin(dLat/2)**2+Math.cos(a.lat*p)*Math.cos(b.lat*p)*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
 function nearestTariffZone(pt){let best=null,bestD=Infinity;for(const z of TARIFF_ZONES){const d=haversineKm(pt,z);if(d<bestD){bestD=d;best=z}}return best;}
+// Explizite, aus dem Tarifzonenplan/der Haltestellen-Zonenbasis bestätigte Zuordnungen.
+// Diese stehen vor der geometrischen Routenprüfung und verhindern, dass ein weit
+// entfernter Zonen-Anker eine Haltestelle falsch einordnet.
+const STOP_ZONE_OVERRIDES=new Map([
+  ['GL081','33245'] // Drasendorf Abzweigung
+]);
+function destinationZoneFor(stop){
+  const code=stopCode(stop);
+  const id=STOP_ZONE_OVERRIDES.get(code);
+  if(id)return TARIFF_ZONES.find(z=>z.id===id)||null;
+  return nearestTariffZone(stop);
+}
+
 function routeZoneSequence(routeCoords){
   if(!Array.isArray(routeCoords)||routeCoords.length<2)return [];
   const STEP_M=90, MIN_STAY_M=140, seq=[];
@@ -191,7 +204,12 @@ function routeZoneSequence(routeCoords){
   if(last && seq.at(-1)?.id!==last.id)seq.push(last);
   return seq;
 }
-const VERIFIED_ROUTES=new Map([['SV104|LF061',{zones:4,sequence:['33556','33558','33543','33541']}],['LF061|SV104',{zones:4,sequence:['33541','33543','33558','33556']}]]);
+const VERIFIED_ROUTES=new Map([
+ ['SV104|LF061',{zones:4,sequence:['33556','33558','33543','33541']}],
+ ['LF061|SV104',{zones:4,sequence:['33541','33543','33558','33556']}],
+ ['SV104|GL081',{zones:2,sequence:['33556','33245']}],
+ ['GL081|SV104',{zones:2,sequence:['33245','33556']}]
+]);
 
 // Offizielle Einzelkartenpreise, gültig ab 01.07.2026.
 const TARIF_2026={
@@ -303,7 +321,9 @@ async function calculateTrip(){
    routeLine=L.geoJSON(route.geometry,{style:{weight:5,opacity:.8}}).addTo(map);
    map.fitBounds(routeLine.getBounds(),{padding:[20,20]});
    if(!verified){
-     const seq=routeZoneSequence(route.geometry.coordinates);
+     let seq=routeZoneSequence(route.geometry.coordinates);
+     const destZone=destinationZoneFor(b);
+     if(destZone && seq.at(-1)?.id!==destZone.id) seq.push(destZone);
      if(!seq.length)throw new Error('Keine Tarifzone ermittelt');
      const cached={zones:seq.length,sequence:seq.map(z=>z.id),updated:new Date().toISOString()};
      zoneCache[key]=cached;try{localStorage.setItem(ZONE_CACHE_KEY,JSON.stringify(zoneCache))}catch(e){}
