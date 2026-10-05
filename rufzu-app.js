@@ -7,48 +7,25 @@ let routeLine=null;
 
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function fmtEuro(v){return Number(v).toFixed(2).replace('.',',')+' €'}
-function getSelectedPair(){return selected.to?{from:FIXED_ORIGIN,to:selected.to}:null}
+function getSelectedPair(){return selected.from&&selected.to?{from:selected.from,to:selected.to}:null}
 
 const colorMap={'Maria Saal':'#f1d400','St.Veit':'#e59b00','Liebenfels':'#d64b27','Frauenstein':'#2877d1','St.Georgen am Längsee':'#18a566'};
-const map=window.L ? L.map('map').setView([46.76,14.37],10) : null;
-if(map){
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
-  stops.forEach(s=>{
-    const c=colorMap[s.group]||'#666';
-    const marker=L.circleMarker([s.lat,s.lon],{radius:5,weight:1,fillOpacity:.85,color:c,fillColor:c}).addTo(map);
-    marker.bindTooltip(s.name,{direction:'top',offset:[0,-4]});
-    marker.on('click',()=>{if(!selected.from)pick('from',stops.indexOf(s));else if(!selected.to)pick('to',stops.indexOf(s));});
-  });
-}else{
-  const m=document.getElementById('map');
-  if(m)m.innerHTML='<div style="padding:20px;text-align:center;color:#777">Karte derzeit nicht verfügbar. Tarif- und Routenberechnung bleibt verfügbar.</div>';
-}
-
-function setupField(id){
-  const input=document.getElementById(id),box=document.getElementById(id+'Sug');
-  input.addEventListener('input',()=>{selected[id]=null;renderSuggestions(id)});
-  input.addEventListener('focus',()=>renderSuggestions(id));
-  input.addEventListener('keydown',e=>{if(e.key==='Escape')box.hidden=true});
-}
-function renderSuggestions(id){
-  const q=document.getElementById(id).value.trim().toLowerCase(),box=document.getElementById(id+'Sug');
-  if(!q){box.hidden=true;return}
-  const matches=stops.filter(s=>s.name.toLowerCase().includes(q)).slice(0,30);
-  box.innerHTML=matches.length?matches.map(s=>`<div class="sug" data-index="${stops.indexOf(s)}"><b>${esc(s.name)}</b><span>${esc(s.group)}</span></div>`).join(''):'<div class="sug"><span>Keine passende Haltestelle gefunden</span></div>';
-  box.querySelectorAll('[data-index]').forEach(el=>el.addEventListener('click',()=>pick(id,Number(el.dataset.index))));
-  box.hidden=false;
-}
-function pick(id,i){
-  const s=stops[i]; if(!s)return;
-  selected[id]=s;document.getElementById(id).value=s.name;document.getElementById(id+'Sug').hidden=true;
-  if(map)map.setView([s.lat,s.lon],15);
-}
-function clearField(id){selected[id]=null;document.getElementById(id).value='';document.getElementById(id+'Sug').hidden=true;document.getElementById(id).focus()}
-function swapStops(){alert('Der Startpunkt ist für die Zonenkalkulation fest auf SV104 – St.Veit/Glan Bahnhof gesetzt.');}
-
-document.addEventListener('click',e=>{if(!e.target.closest('.field')){const box=document.getElementById('toSug');if(box)box.hidden=true}});
-setupField('to');
+const map=window.L?L.map('map').setView([46.76,14.37],10):null;
+if(map)L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+if(map)stops.forEach(s=>{const c=colorMap[s.group]||'#666';const marker=L.circleMarker([s.lat,s.lon],{radius:5,weight:1,fillOpacity:.85,color:c,fillColor:c}).addTo(map);marker.bindTooltip(s.name,{direction:'top',offset:[0,-4]});marker.on('click',()=>{if(!selected.from)pick('from',stops.indexOf(s));else if(!selected.to)pick('to',stops.indexOf(s));});});
+function setupField(id){const input=document.getElementById(id),box=document.getElementById(id+'Sug');input.addEventListener('input',()=>{selected[id]=null;renderSuggestions(id)});input.addEventListener('focus',()=>renderSuggestions(id));input.addEventListener('keydown',e=>{if(e.key==='Escape')box.hidden=true});}
+function renderSuggestions(id){const q=document.getElementById(id).value.trim().toLowerCase(),box=document.getElementById(id+'Sug');if(!q){box.hidden=true;return}const matches=stops.filter(s=>s.name.toLowerCase().includes(q)).slice(0,30);box.innerHTML=matches.length?matches.map(s=>`<div class="sug" data-index="${stops.indexOf(s)}"><b>${esc(s.name)}</b><span>${esc(s.group)}</span></div>`).join(''):'<div class="sug"><span>Keine passende Haltestelle gefunden</span></div>';box.querySelectorAll('[data-index]').forEach(el=>el.addEventListener('click',()=>pick(id,Number(el.dataset.index))));box.hidden=false;}
+function pick(id,i){const s=stops[i];if(!s)return;selected[id]=s;document.getElementById(id).value=s.name;document.getElementById(id+'Sug').hidden=true;if(map)map.setView([s.lat,s.lon],15);}
+function clearField(id){selected[id]=null;document.getElementById(id).value='';document.getElementById(id+'Sug').hidden=true;document.getElementById(id).focus();}
+function swapStops(){const a=selected.from,b=selected.to;selected.from=b;selected.to=a;document.getElementById('from').value=b?.name||'';document.getElementById('to').value=a?.name||'';}
+document.addEventListener('click',e=>{['from','to'].forEach(id=>{const box=document.getElementById(id+'Sug');if(box&&!e.target.closest('.field'))box.hidden=true;});});
+setupField('from');setupField('to');
+document.getElementById('clearFrom').addEventListener('click',()=>clearField('from'));
 document.getElementById('clearTo').addEventListener('click',()=>clearField('to'));
+document.getElementById('gpsBtn').addEventListener('click',()=>{if(!navigator.geolocation){alert('GPS wird von diesem Browser nicht unterstützt.');return}const b=document.getElementById('gpsBtn');b.textContent='📍 Standort wird ermittelt …';navigator.geolocation.getCurrentPosition(pos=>{selected.from={name:'Mein aktueller Standort',lat:pos.coords.latitude,lon:pos.coords.longitude,group:'GPS'};document.getElementById('from').value='📍 Mein aktueller Standort';b.textContent='✓ Aktuellen Standort verwenden';if(map)map.setView([pos.coords.latitude,pos.coords.longitude],14)},()=>{b.textContent='📍 Aktuellen Standort verwenden';alert('Standort konnte nicht ermittelt werden.')},{enableHighAccuracy:true,timeout:12000,maximumAge:30000});});
+if(map){
+  // Map is optional; tariff calculation must work even when Leaflet is unavailable.
+}
 
 
 function hav(a,b){
@@ -87,52 +64,59 @@ function renderZoneResult(sequence,a,b,sourceLabel='Routenberechnung'){
  document.getElementById('fareBox').innerHTML=fareBoxForZone(zones);
  return zones;
 }
+function routeZoneSequence(coords){
+ const seq=[];let last=null;
+ for(let i=0;i<coords.length;i+=Math.max(1,Math.floor(coords.length/120))){
+   const [lon,lat]=coords[i];const z=nearestTariffZone({lat,lon});if(z&&z.id!==last){seq.push(z);last=z.id;}
+ }
+ return seq;
+}
+function destinationZoneFor(stop){return nearestTariffZone(stop);}
+
 async function calculateTrip(){
  const pair=getSelectedPair();
  if(!pair){alert('Bitte Von und Nach auswählen.');return}
  const a=pair.from,b=pair.to;
  document.getElementById('result').style.display='block';
- document.getElementById('routeText').innerHTML='<b>Von:</b> '+esc(FIXED_ORIGIN.name)+'<br><b>Nach:</b> '+esc(b.name);
+ document.getElementById('routeText').innerHTML='<b>Von:</b> '+esc(a.name)+'<br><b>Nach:</b> '+esc(b.name);
+ document.getElementById('distanceText').textContent='Berechne …';
+ document.getElementById('distanceNote').textContent='Straßenroute wird nur zusätzlich zur Information ermittelt.';
  const nav=`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(a.lat+','+a.lon)}&destination=${encodeURIComponent(b.lat+','+b.lon)}&travelmode=driving`;
  document.getElementById('nav').href=nav;
+ // TARIF VOR ROUTING: bekannte/verifizierte PDF-Zonen werden sofort angezeigt.
  const key=stopCode(a)+'|'+stopCode(b);
  const verified=VERIFIED_ROUTES.get(key);
- document.getElementById('distanceText').textContent='Berechne …';
- document.getElementById('distanceNote').textContent='Straßenroute und Tarifzonen werden berechnet …';
- if(verified)renderZoneResult(verified.sequence,a,b,'verifizierter Kontrollfall');
+ if(verified){
+   renderZoneResult(verified.sequence,a,b,'Tarifzonen aus der PDF-Zonenbasis');
+ }else{
+   const za=nearestTariffZone(a),zb=nearestTariffZone(b);
+   if(za&&zb&&za.id===zb.id){
+     renderZoneResult([za.id],a,b,'1 Zone – gleiche Tarifzone');
+   }else{
+     const cached=zoneCache[key];
+     if(cached?.sequence?.length) renderZoneResult(cached.sequence,a,b,'gespeicherte PDF-Zonenprüfung');
+     else{
+       document.getElementById('zoneText').innerHTML='<b>Tarifzone ermittelt</b>';
+       document.getElementById('zonePath').textContent=(za?.id||'–')+' → '+(zb?.id||'–');
+       document.getElementById('zoneMessage').innerHTML='<div class="warn">Die Straßenroute ist für die Tarifanzeige nicht erforderlich. Für diese konkrete Strecke ist aber noch keine verifizierte Zonenfolge hinterlegt; es wird kein Zonenwert aus Kilometern geschätzt.</div>';
+       document.getElementById('fareBox').innerHTML='';
+     }
+   }
+ }
  try{
    const route=await getRoute(a,b),km=route.distance/1000;
    document.getElementById('distanceText').textContent=km.toFixed(1).replace('.',',')+' km';
    document.getElementById('distanceNote').textContent='Nur Informationswert. Straßenkilometer bestimmen NICHT die Tarifzonen.';
-   if(map && window.L){
-     if(routeLine)map.removeLayer(routeLine);
-     routeLine=L.geoJSON(route.geometry,{style:{weight:5,opacity:.8}}).addTo(map);
-     map.fitBounds(routeLine.getBounds(),{padding:[20,20]});
-   }
-   if(!verified){
-     let seq=routeZoneSequence(route.geometry.coordinates);
-     const destZone=destinationZoneFor(b);
-     if(destZone && seq.at(-1)?.id!==destZone.id) seq.push(destZone);
-     if(!seq.length)throw new Error('Keine Tarifzone ermittelt');
-     const cached={zones:seq.length,sequence:seq.map(z=>z.id),updated:new Date().toISOString()};
-     zoneCache[key]=cached;try{localStorage.setItem(ZONE_CACHE_KEY,JSON.stringify(zoneCache))}catch(e){}
-     renderZoneResult(seq,a,b,'automatische Routenprüfung');
-   }else{
-     document.getElementById('zoneMessage').innerHTML='<div class="good">✓ Kontrollfall: SV104 → LF061 = 4 Zonen. Die Route wurde zusätzlich technisch geprüft.</div>';
+   if(map&&routeLine)map.removeLayer(routeLine);
+   if(map){routeLine=L.geoJSON(route.geometry,{style:{weight:5,opacity:.8}}).addTo(map);map.fitBounds(routeLine.getBounds(),{padding:[20,20]});}
+   // Routing darf die bereits angezeigte Tarifinformation nicht überschreiben.
+   if(!verified && !(zoneCache[key]?.sequence?.length)){
+     const seq=routeZoneSequence(route.geometry.coordinates);
+     if(seq.length){const cached={zones:seq.length,sequence:seq.map(z=>z.id),updated:new Date().toISOString()};zoneCache[key]=cached;try{localStorage.setItem(ZONE_CACHE_KEY,JSON.stringify(zoneCache))}catch(e){}renderZoneResult(seq,a,b,'PDF-Zonenbasis + Straßenroute');}
    }
  }catch(e){
-   if(!verified){
-     const cached=zoneCache[key];
-     if(cached?.sequence?.length)renderZoneResult(cached.sequence,a,b,'gespeicherte Routenprüfung');
-     else{
-       document.getElementById('zoneText').innerHTML='<b>Tarifzonen derzeit nicht berechenbar</b>';
-       document.getElementById('zonePath').textContent='Die Straßenroute konnte nicht ermittelt werden. Es wird bewusst keine Zone geraten.';
-       document.getElementById('zoneMessage').innerHTML='<div class="warn">Bitte Internetverbindung prüfen oder die offizielle Kärntner-Linien-Preisauskunft verwenden.</div>';
-       document.getElementById('fareBox').innerHTML='';
-     }
-   }
    document.getElementById('distanceText').textContent='nicht verfügbar';
-   document.getElementById('distanceNote').textContent='Straßenroute derzeit nicht erreichbar.';
+   document.getElementById('distanceNote').textContent='Straßenroute derzeit nicht erreichbar. Tarifanzeige bleibt davon unabhängig bestehen.';
  }
 }
 document.getElementById('calcBtn').addEventListener('click',calculateTrip);
@@ -153,11 +137,9 @@ function openOfficial(){
 document.getElementById('copyBtn').addEventListener('click',copyTrip);
 document.getElementById('officialBtn').addEventListener('click',openOfficial);
 
-selected.from=FIXED_ORIGIN;document.getElementById('from').value=FIXED_ORIGIN?.name||'';
 
 // Sicherheitsprüfungen beim Laden.
 if(stops.length!==536)console.error('Haltestellen-Datensatz beschädigt: erwartet 536, gefunden',stops.length);
 if(!stops.some(s=>s.name.startsWith('SV104 - ')))console.error('SV104 fehlt');
 if(!stops.some(s=>s.name.startsWith('LF061 - ')))console.error('LF061 fehlt');
-if(!FIXED_ORIGIN)console.error('FIXED_ORIGIN SV104 fehlt');
 if(TARIFF_ZONES.length<25)console.error('Tarifzonenbasis unvollständig');
