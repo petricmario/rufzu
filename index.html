@@ -25,7 +25,7 @@
 <main class="main">
 <section class="panel">
 <div class="panel-title">Fahrt planen</div>
-<div class="field"><div class="label">VON · FESTER STARTPUNKT</div><div class="control"><div class="icon">●</div><input id="from" readonly><span class="fixed">FIX</span></div></div>
+<div class="field"><div class="label">VON</div><button type="button" id="gpsBtn" class="secondary" style="width:100%;margin-bottom:8px">📍 Aktuellen Standort verwenden</button><div class="control"><div class="icon">●</div><input id="from" autocomplete="off" placeholder="Haltestelle suchen …"><button class="clear" id="clearFrom">×</button></div><div class="suggestions" id="fromSug" hidden></div></div>
 <div class="field"><div class="label">NACH · RUF:ZU-HALTESTELLE</div><div class="control"><div class="icon">◎</div><input id="to" autocomplete="off" placeholder="Haltestelle suchen …"><button class="clear" id="clearTo">×</button></div><div class="suggestions" id="toSug" hidden></div></div>
 <button class="calculate" id="calcBtn">TARIF &amp; ROUTE BERECHNEN</button>
 <div class="quick"><button class="secondary" id="copyBtn">↗ Von / Nach kopieren</button><button class="secondary" id="officialBtn">€ Offizielle Preisauskunft</button></div>
@@ -43,7 +43,7 @@
 <footer class="footer"><b>Ruf:Zu · Rufbus Zollfeld &amp; Umgebung</b><br>Tarifzonen werden nicht aus Straßenkilometern abgeleitet. Verbindliche Preisprüfung: <a href="https://pa2.kaerntner-linien.at/preisauskunft" target="_blank" rel="noopener">Kärntner Linien Preisauskunft</a>.</footer>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script src="rufzu-daten.js"></script>
-<script src="rufzu-app.js"></script>
+<script src="rufzu-daten.js?v=20261005-3"></script>
+<script src="rufzu-app.js?v=20261005-3"></script>
 </body>
 </html>
