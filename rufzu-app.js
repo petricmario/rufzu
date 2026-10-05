@@ -10,14 +10,19 @@ function fmtEuro(v){return Number(v).toFixed(2).replace('.',',')+' €'}
 function getSelectedPair(){return selected.to?{from:FIXED_ORIGIN,to:selected.to}:null}
 
 const colorMap={'Maria Saal':'#f1d400','St.Veit':'#e59b00','Liebenfels':'#d64b27','Frauenstein':'#2877d1','St.Georgen am Längsee':'#18a566'};
-const map=L.map('map').setView([46.76,14.37],10);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
-stops.forEach(s=>{
-  const c=colorMap[s.group]||'#666';
-  const marker=L.circleMarker([s.lat,s.lon],{radius:5,weight:1,fillOpacity:.85,color:c,fillColor:c}).addTo(map);
-  marker.bindTooltip(s.name,{direction:'top',offset:[0,-4]});
-  marker.on('click',()=>{if(!selected.from)pick('from',stops.indexOf(s));else if(!selected.to)pick('to',stops.indexOf(s));});
-});
+const map = window.L ? L.map('map').setView([46.76,14.37],10) : null;
+if (map) {
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+  stops.forEach(s=>{
+    const c=colorMap[s.group]||'#666';
+    const marker=L.circleMarker([s.lat,s.lon],{radius:5,weight:1,fillOpacity:.85,color:c,fillColor:c}).addTo(map);
+    marker.bindTooltip(s.name,{direction:'top',offset:[0,-4]});
+    marker.on('click',()=>{if(!selected.from)pick('from',stops.indexOf(s));else if(!selected.to)pick('to',stops.indexOf(s));});
+  });
+} else {
+  const mapEl=document.getElementById('map');
+  if(mapEl) mapEl.innerHTML='<div style="padding:20px;font-weight:800">Karte derzeit nicht verfügbar. Tarif- und Zonenberechnung funktioniert trotzdem.</div>';
+}
 
 function setupField(id){
   const input=document.getElementById(id),box=document.getElementById(id+'Sug');
@@ -36,7 +41,7 @@ function renderSuggestions(id){
 function pick(id,i){
   const s=stops[i]; if(!s)return;
   selected[id]=s;document.getElementById(id).value=s.name;document.getElementById(id+'Sug').hidden=true;
-  map.setView([s.lat,s.lon],15);
+  if(map) map.setView([s.lat,s.lon],15);
 }
 function clearField(id){selected[id]=null;document.getElementById(id).value='';document.getElementById(id+'Sug').hidden=true;document.getElementById(id).focus()}
 function swapStops(){alert('Der Startpunkt ist für die Zonenkalkulation fest auf SV104 – St.Veit/Glan Bahnhof gesetzt.');}
@@ -99,9 +104,11 @@ async function calculateTrip(){
    const route=await getRoute(a,b),km=route.distance/1000;
    document.getElementById('distanceText').textContent=km.toFixed(1).replace('.',',')+' km';
    document.getElementById('distanceNote').textContent='Nur Informationswert. Straßenkilometer bestimmen NICHT die Tarifzonen.';
-   if(routeLine)map.removeLayer(routeLine);
-   routeLine=L.geoJSON(route.geometry,{style:{weight:5,opacity:.8}}).addTo(map);
-   map.fitBounds(routeLine.getBounds(),{padding:[20,20]});
+   if(map && window.L){
+     if(routeLine)map.removeLayer(routeLine);
+     routeLine=L.geoJSON(route.geometry,{style:{weight:5,opacity:.8}}).addTo(map);
+     map.fitBounds(routeLine.getBounds(),{padding:[20,20]});
+   }
    if(!verified){
      let seq=routeZoneSequence(route.geometry.coordinates);
      const destZone=destinationZoneFor(b);
