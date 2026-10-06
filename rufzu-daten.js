@@ -29,8 +29,6 @@ const TARIFF_ZONES=[
  ['34431','Magdalensberg',46.70800,14.40000],['34432','Ottmanach',46.73000,14.43000],['34433','Lassendorf',46.70000,14.43000],['34435','Gottesbichl',46.69000,14.40000],['34434','Salchendorf',46.69000,14.45000],['34441','Poggersdorf',46.68000,14.50000],['32451','Tainach',46.69000,14.52000]
 ].map(([id,name,lat,lon])=>({id,name,lat,lon}));
 function stopCode(stop){const m=String(stop?.name||'').match(/^([A-Z]{2}\d{3})\s*-/i);return m?m[1].toUpperCase():''}
-const FIXED_ORIGIN_CODE='SV104';
-const FIXED_ORIGIN=stops.find(s=>stopCode(s)==FIXED_ORIGIN_CODE);
 const ZONE_CACHE_KEY='rufzu-zone-cache-v4';
 let zoneCache={};try{zoneCache=JSON.parse(localStorage.getItem(ZONE_CACHE_KEY)||'{}')||{}}catch(e){zoneCache={}};
 function haversineKm(a,b){const R=6371,p=Math.PI/180,dLat=(b.lat-a.lat)*p,dLon=(b.lon-a.lon)*p;const x=Math.sin(dLat/2)**2+Math.cos(a.lat*p)*Math.cos(b.lat*p)*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
@@ -54,3 +52,31 @@ const TARIF_2026={
 };
 
 const COMFORT_SURCHARGE=2.00;
+
+
+// Dynamische Tarifzonenermittlung auf Basis der hinterlegten Tarifzonen-Anker.
+// Die Tarifzonen-Daten stammen aus dem bereitgestellten Tarifzonenplan; Straßenkilometer
+// werden niemals zur Bestimmung der Zonenzahl verwendet.
+function getRouteZoneSequence(startStop,endStop,routeGeometry=null){
+  const key=stopCode(startStop)+'|'+stopCode(endStop);
+  if(VERIFIED_ROUTES.has(key)) return VERIFIED_ROUTES.get(key);
+
+  const points=[startStop];
+  if(routeGeometry && Array.isArray(routeGeometry.coordinates)){
+    const coords=routeGeometry.coordinates;
+    const step=Math.max(1,Math.floor(coords.length/20));
+    for(let i=step;i<coords.length-step;i+=step){
+      points.push({lat:coords[i][1],lon:coords[i][0]});
+    }
+  }
+  points.push(endStop);
+
+  const zoneSequence=[];
+  for(const pt of points){
+    const zone=nearestTariffZone(pt);
+    if(zone && (zoneSequence.length===0 || zoneSequence[zoneSequence.length-1]!==zone.id)){
+      zoneSequence.push(zone.id);
+    }
+  }
+  return {zones:zoneSequence.length,sequence:zoneSequence};
+}
