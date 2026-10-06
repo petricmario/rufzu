@@ -10,22 +10,101 @@ function fmtEuro(v){return Number(v).toFixed(2).replace('.',',')+' €'}
 function getSelectedPair(){return selected.from&&selected.to?{from:selected.from,to:selected.to}:null}
 
 const colorMap={'Maria Saal':'#f1d400','St.Veit':'#e59b00','Liebenfels':'#d64b27','Frauenstein':'#2877d1','St.Georgen am Längsee':'#18a566'};
-const map=window.L?L.map('map').setView([46.76,14.37],10):null;
-if(map)L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
-if(map)stops.forEach(s=>{const c=colorMap[s.group]||'#666';const marker=L.circleMarker([s.lat,s.lon],{radius:5,weight:1,fillOpacity:.85,color:c,fillColor:c}).addTo(map);marker.bindTooltip(s.name,{direction:'top',offset:[0,-4]});marker.on('click',()=>{if(!selected.from)pick('from',stops.indexOf(s));else if(!selected.to)pick('to',stops.indexOf(s));});});
-function setupField(id){const input=document.getElementById(id),box=document.getElementById(id+'Sug');input.addEventListener('input',()=>{selected[id]=null;renderSuggestions(id)});input.addEventListener('focus',()=>renderSuggestions(id));input.addEventListener('keydown',e=>{if(e.key==='Escape')box.hidden=true});}
-function renderSuggestions(id){const q=document.getElementById(id).value.trim().toLowerCase(),box=document.getElementById(id+'Sug');if(!q){box.hidden=true;return}const matches=stops.filter(s=>s.name.toLowerCase().includes(q)).slice(0,30);box.innerHTML=matches.length?matches.map(s=>`<div class="sug" data-index="${stops.indexOf(s)}"><b>${esc(s.name)}</b><span>${esc(s.group)}</span></div>`).join(''):'<div class="sug"><span>Keine passende Haltestelle gefunden</span></div>';box.querySelectorAll('[data-index]').forEach(el=>el.addEventListener('click',()=>pick(id,Number(el.dataset.index))));box.hidden=false;}
-function pick(id,i){const s=stops[i];if(!s)return;selected[id]=s;document.getElementById(id).value=s.name;document.getElementById(id+'Sug').hidden=true;if(map)map.setView([s.lat,s.lon],15);}
-function clearField(id){selected[id]=null;document.getElementById(id).value='';document.getElementById(id+'Sug').hidden=true;document.getElementById(id).focus();}
-function swapStops(){const a=selected.from,b=selected.to;selected.from=b;selected.to=a;document.getElementById('from').value=b?.name||'';document.getElementById('to').value=a?.name||'';}
-document.addEventListener('click',e=>{['from','to'].forEach(id=>{const box=document.getElementById(id+'Sug');if(box&&!e.target.closest('.field'))box.hidden=true;});});
-setupField('from');setupField('to');
+const map=L.map('map').setView([46.76,14.37],10);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+stops.forEach(s=>{
+  const c=colorMap[s.group]||'#666';
+  const marker=L.circleMarker([s.lat,s.lon],{radius:5,weight:1,fillOpacity:.85,color:c,fillColor:c}).addTo(map);
+  marker.bindTooltip(s.name,{direction:'top',offset:[0,-4]});
+  marker.on('click',()=>{if(!selected.from)pick('from',stops.indexOf(s));else if(!selected.to)pick('to',stops.indexOf(s));});
+});
+
+function setupField(id){
+  const input=document.getElementById(id),box=document.getElementById(id+'Sug');
+  input.addEventListener('input',()=>{selected[id]=null;renderSuggestions(id)});
+  input.addEventListener('focus',()=>renderSuggestions(id));
+  input.addEventListener('keydown',e=>{if(e.key==='Escape')box.hidden=true});
+}
+function renderSuggestions(id){
+  const q=document.getElementById(id).value.trim().toLowerCase(),box=document.getElementById(id+'Sug');
+  if(!q){box.hidden=true;return}
+  const matches=stops.filter(s=>s.name.toLowerCase().includes(q)).slice(0,30);
+  box.innerHTML=matches.length?matches.map(s=>`<div class="sug" data-index="${stops.indexOf(s)}"><b>${esc(s.name)}</b><span>${esc(s.group)}</span></div>`).join(''):'<div class="sug"><span>Keine passende Haltestelle gefunden</span></div>';
+  box.querySelectorAll('[data-index]').forEach(el=>el.addEventListener('click',()=>pick(id,Number(el.dataset.index))));
+  box.hidden=false;
+}
+function pick(id,i){
+  const s=stops[i]; if(!s)return;
+  selected[id]=s;document.getElementById(id).value=s.name;document.getElementById(id+'Sug').hidden=true;
+  map.setView([s.lat,s.lon],15);
+}
+function clearField(id){selected[id]=null;document.getElementById(id).value='';document.getElementById(id+'Sug').hidden=true;document.getElementById(id).focus()}
+function swapStops(){if(!selected.from||!selected.to){alert('Bitte zuerst Von und Nach auswählen.');return}const a=selected.from,b=selected.to;selected.from=b;selected.to=a;document.getElementById('from').value=a?b.name:'';document.getElementById('to').value=b?a.name:'';map.setView([b.lat,b.lon],15);}
+
+document.addEventListener('click',e=>{if(!e.target.closest('.field')){const box=document.getElementById('toSug');if(box)box.hidden=true}});
+setupField('from');
+setupField('to');
 document.getElementById('clearFrom').addEventListener('click',()=>clearField('from'));
 document.getElementById('clearTo').addEventListener('click',()=>clearField('to'));
-document.getElementById('gpsBtn').addEventListener('click',()=>{if(!navigator.geolocation){alert('GPS wird von diesem Browser nicht unterstützt.');return}const b=document.getElementById('gpsBtn');b.textContent='📍 Standort wird ermittelt …';navigator.geolocation.getCurrentPosition(pos=>{selected.from={name:'Mein aktueller Standort',lat:pos.coords.latitude,lon:pos.coords.longitude,group:'GPS'};document.getElementById('from').value='📍 Mein aktueller Standort';b.textContent='✓ Aktuellen Standort verwenden';if(map)map.setView([pos.coords.latitude,pos.coords.longitude],14)},()=>{b.textContent='📍 Aktuellen Standort verwenden';alert('Standort konnte nicht ermittelt werden.')},{enableHighAccuracy:true,timeout:12000,maximumAge:30000});});
-if(map){
-  // Map is optional; tariff calculation must work even when Leaflet is unavailable.
+document.getElementById('swapBtn')?.addEventListener('click',swapStops);
+
+
+function normalizeText(s){return String(s||'').toUpperCase().replace(/Ä/g,'AE').replace(/Ö/g,'OE').replace(/Ü/g,'UE').replace(/ß/g,'SS').replace(/[^A-Z0-9]/g,'');}
+function findStopFromOCR(text){
+ const upper=String(text||'').toUpperCase();
+ const codes=[...upper.matchAll(/\b([A-Z]{2}\s*\d{3})\b/g)].map(m=>m[1].replace(/\s+/g,''));
+ for(const code of codes){const hit=stops.find(s=>stopCode(s)===code);if(hit)return hit;}
+ const norm=normalizeText(upper);
+ let best=null,bestScore=0;
+ for(const st of stops){
+   const name=normalizeText(st.name.replace(/^[A-Z]{2}\d{3}\s*-?\s*/i,''));
+   if(name.length<5)continue;
+   const tokens=name.match(/[A-Z0-9]{4,}/g)||[];
+   const score=tokens.reduce((n,t)=>n+(norm.includes(t)?t.length:0),0);
+   if(score>bestScore){bestScore=score;best=st;}
+ }
+ return bestScore>=6?best:null;
 }
+function findTimes(text){return [...String(text||'').matchAll(/\b([01]?\d|2[0-3])\s*[:.]\s*([0-5]\d)\b/g)].map(m=>`${String(m[1]).padStart(2,'0')}:${m[2]}`);}
+function findPassengerNumbers(text){
+ const t=String(text||'');
+ const up=t.toUpperCase();
+ const nums=[...t.matchAll(/\b(\d{1,2})\b/g)].map(m=>Number(m[1])).filter(n=>n<=99);
+ let board=null,alight=null;
+ const bm=up.match(/(?:EINSTEIG|EINSTIEG|ZUSTIEG|ABHOL|↑)\D{0,8}(\d{1,2})/i); if(bm)board=Number(bm[1]);
+ const am=up.match(/(?:AUSSTEIG|AUSSTIEG|ABGANG|↓)\D{0,8}(\d{1,2})/i); if(am)alight=Number(am[1]);
+ if(board===null&&nums.length>=2)board=nums[0];
+ if(alight===null&&nums.length>=2)alight=nums[1];
+ return {board,alight};
+}
+async function scanScheduleImage(file){
+ const status=document.getElementById('ocrStatus');
+ status.className='ocrstatus';status.textContent='⏳ Foto wird gelesen …';
+ try{
+   if(!window.Tesseract)throw new Error('OCR-Modul konnte nicht geladen werden.');
+   const result=await Tesseract.recognize(file,'deu+eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)status.textContent=`⏳ Text wird erkannt … ${Math.round(m.progress*100)} %`;}});
+   const text=result?.data?.text||'';
+   const from=findStopFromOCR(text);
+   // Für die zweite Haltestelle versuchen wir zunächst Codes/Zeilen nach dem ersten Treffer.
+   const codes=[...text.toUpperCase().matchAll(/\b([A-Z]{2}\s*\d{3})\b/g)].map(m=>m[1].replace(/\s+/g,''));
+   const unique=[];for(const c of codes){if(!unique.includes(c))unique.push(c)}
+   let to=null;
+   if(unique.length>1)to=stops.find(st=>stopCode(st)===unique[1])||null;
+   if(!to){
+     const lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+     const candidates=lines.map(findStopFromOCR).filter(Boolean);
+     for(const c of candidates){if(!from||c.id!==from.id){to=c;break;}}
+   }
+   if(from)pick('from',stops.indexOf(from));
+   if(to)pick('to',stops.indexOf(to));
+   const times=findTimes(text);if(times[0])document.getElementById('departTime').value=times[0];if(times[1])document.getElementById('arriveTime').value=times[1];
+   const pc=findPassengerNumbers(text);if(pc.board!==null)document.getElementById('boardCount').value=pc.board;if(pc.alight!==null)document.getElementById('alightCount').value=pc.alight;
+   const found=[];if(from)found.push('Von');if(to)found.push('Nach');if(times.length)found.push('Zeiten');if(pc.board!==null||pc.alight!==null)found.push('Ein-/Ausstieg');
+   if(found.length){status.className='ocrstatus good';status.textContent='✓ Erkannt: '+found.join(', ')+'. Bitte kurz kontrollieren und danach berechnen.';}else{status.className='ocrstatus warn';status.textContent='Keine verwertbaren Fahrplandaten erkannt. Bitte manuell eingeben.';}
+ }catch(e){status.className='ocrstatus warn';status.textContent='Foto konnte nicht automatisch gelesen werden. Bitte Daten manuell eingeben.';}
+}
+document.getElementById('scanBtn')?.addEventListener('click',()=>document.getElementById('scanInput')?.click());
+document.getElementById('scanInput')?.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)scanScheduleImage(f);e.target.value='';});
 
 
 function hav(a,b){
@@ -64,59 +143,39 @@ function renderZoneResult(sequence,a,b,sourceLabel='Routenberechnung'){
  document.getElementById('fareBox').innerHTML=fareBoxForZone(zones);
  return zones;
 }
-function routeZoneSequence(coords){
- const seq=[];let last=null;
- for(let i=0;i<coords.length;i+=Math.max(1,Math.floor(coords.length/120))){
-   const [lon,lat]=coords[i];const z=nearestTariffZone({lat,lon});if(z&&z.id!==last){seq.push(z);last=z.id;}
- }
- return seq;
-}
-function destinationZoneFor(stop){return nearestTariffZone(stop);}
-
 async function calculateTrip(){
  const pair=getSelectedPair();
  if(!pair){alert('Bitte Von und Nach auswählen.');return}
  const a=pair.from,b=pair.to;
  document.getElementById('result').style.display='block';
  document.getElementById('routeText').innerHTML='<b>Von:</b> '+esc(a.name)+'<br><b>Nach:</b> '+esc(b.name);
- document.getElementById('distanceText').textContent='Berechne …';
- document.getElementById('distanceNote').textContent='Straßenroute wird nur zusätzlich zur Information ermittelt.';
- const nav=`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(a.lat+','+a.lon)}&destination=${encodeURIComponent(b.lat+','+b.lon)}&travelmode=driving`;
+ const dt=document.getElementById('departTime')?.value,at=document.getElementById('arriveTime')?.value;
+ if(dt||at)document.getElementById('routeText').innerHTML+=`<br><b>Fahrt:</b> ${esc(dt||'–')} → ${esc(at||'–')}`;
+ const nav=`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(a.lat+','+a.lon)}&destination=${encodeURIComponent(b.lat+','+b.lon)}&travelmode=driving&dir_action=navigate`;
  document.getElementById('nav').href=nav;
- // TARIF VOR ROUTING: bekannte/verifizierte PDF-Zonen werden sofort angezeigt.
  const key=stopCode(a)+'|'+stopCode(b);
  const verified=VERIFIED_ROUTES.get(key);
+ // Tarifanzeige ist bewusst unabhängig vom Straßenrouting.
  if(verified){
-   renderZoneResult(verified.sequence,a,b,'Tarifzonen aus der PDF-Zonenbasis');
+   renderZoneResult(verified.sequence,a,b,'verifizierte Tarifstrecke');
  }else{
-   const za=nearestTariffZone(a),zb=nearestTariffZone(b);
-   if(za&&zb&&za.id===zb.id){
-     renderZoneResult([za.id],a,b,'1 Zone – gleiche Tarifzone');
-   }else{
-     const cached=zoneCache[key];
-     if(cached?.sequence?.length) renderZoneResult(cached.sequence,a,b,'gespeicherte PDF-Zonenprüfung');
-     else{
-       document.getElementById('zoneText').innerHTML='<b>Tarifzone ermittelt</b>';
-       document.getElementById('zonePath').textContent=(za?.id||'–')+' → '+(zb?.id||'–');
-       document.getElementById('zoneMessage').innerHTML='<div class="warn">Die Straßenroute ist für die Tarifanzeige nicht erforderlich. Für diese konkrete Strecke ist aber noch keine verifizierte Zonenfolge hinterlegt; es wird kein Zonenwert aus Kilometern geschätzt.</div>';
-       document.getElementById('fareBox').innerHTML='';
-     }
-   }
+   document.getElementById('zoneText').innerHTML='<b>Für diese Strecke noch nicht automatisch verifiziert</b>';
+   document.getElementById('zonePath').textContent='Kein Schätzwert aus Kilometern oder Luftlinie.';
+   document.getElementById('zoneMessage').innerHTML='<div class="warn">Die Tarifzonenzahl wird nicht vom Routingserver übernommen. Für diese konkrete Strecke ist in der verifizierten Zonenbasis noch kein Wert hinterlegt.</div>';
+   document.getElementById('fareBox').innerHTML='';
  }
+ document.getElementById('distanceText').textContent='Berechne …';
+ document.getElementById('distanceNote').textContent='Straßenroute wird nur zur Orientierung ermittelt.';
  try{
    const route=await getRoute(a,b),km=route.distance/1000;
    document.getElementById('distanceText').textContent=km.toFixed(1).replace('.',',')+' km';
    document.getElementById('distanceNote').textContent='Nur Informationswert. Straßenkilometer bestimmen NICHT die Tarifzonen.';
-   if(map&&routeLine)map.removeLayer(routeLine);
-   if(map){routeLine=L.geoJSON(route.geometry,{style:{weight:5,opacity:.8}}).addTo(map);map.fitBounds(routeLine.getBounds(),{padding:[20,20]});}
-   // Routing darf die bereits angezeigte Tarifinformation nicht überschreiben.
-   if(!verified && !(zoneCache[key]?.sequence?.length)){
-     const seq=routeZoneSequence(route.geometry.coordinates);
-     if(seq.length){const cached={zones:seq.length,sequence:seq.map(z=>z.id),updated:new Date().toISOString()};zoneCache[key]=cached;try{localStorage.setItem(ZONE_CACHE_KEY,JSON.stringify(zoneCache))}catch(e){}renderZoneResult(seq,a,b,'PDF-Zonenbasis + Straßenroute');}
-   }
+   if(routeLine)map.removeLayer(routeLine);
+   routeLine=L.geoJSON(route.geometry,{style:{weight:5,opacity:.8}}).addTo(map);
+   map.fitBounds(routeLine.getBounds(),{padding:[20,20]});
  }catch(e){
    document.getElementById('distanceText').textContent='nicht verfügbar';
-   document.getElementById('distanceNote').textContent='Straßenroute derzeit nicht erreichbar. Tarifanzeige bleibt davon unabhängig bestehen.';
+   document.getElementById('distanceNote').textContent='Straßenroute derzeit nicht erreichbar. Die Tarifzonenanzeige bleibt davon unabhängig.';
  }
 }
 document.getElementById('calcBtn').addEventListener('click',calculateTrip);
@@ -137,8 +196,6 @@ function openOfficial(){
 document.getElementById('copyBtn').addEventListener('click',copyTrip);
 document.getElementById('officialBtn').addEventListener('click',openOfficial);
 
-
 // Sicherheitsprüfungen beim Laden.
 if(stops.length!==536)console.error('Haltestellen-Datensatz beschädigt: erwartet 536, gefunden',stops.length);
-if(!stops.some(s=>s.name.startsWith('LF061 - ')))console.error('LF061 fehlt');
 if(TARIFF_ZONES.length<25)console.error('Tarifzonenbasis unvollständig');
