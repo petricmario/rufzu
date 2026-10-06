@@ -155,44 +155,43 @@ if(!stops.some(s=>s.name.startsWith('LF061 - ')))console.error('LF061 fehlt');
 if(!FIXED_ORIGIN)console.error('FIXED_ORIGIN SV104 fehlt');
 if(TARIFF_ZONES.length<25)console.error('Tarifzonenbasis unvollständig');
 
-/* Ticket-/KlimaTicket-Scanner: keine Kundendaten werden gespeichert. */
-let ticketReader=null,ticketControls=null,ticketStream=null;
-const ticketModal=document.getElementById('ticketModal');
-const ticketVideo=document.getElementById('ticketVideo');
-const ticketStatus=document.getElementById('ticketStatus');
-const ticketData=document.getElementById('ticketData');
-function ticketSetStatus(text,kind=''){ticketStatus.className='ticketStatus'+(kind?' '+kind:'');ticketStatus.textContent=text;}
-function ticketOpen(){ticketModal.classList.add('open');ticketModal.setAttribute('aria-hidden','false');ticketData.classList.add('hidden');ticketSetStatus('Kamera wird vorbereitet …');ticketStart();}
-function ticketStop(){try{ticketControls?.stop()}catch(e){}ticketControls=null;try{ticketReader?.reset()}catch(e){}if(ticketStream){ticketStream.getTracks().forEach(t=>t.stop());ticketStream=null}if(ticketVideo){ticketVideo.pause();ticketVideo.srcObject=null}}
-function ticketClose(){ticketStop();ticketModal.classList.remove('open');ticketModal.setAttribute('aria-hidden','true')}
-async function ticketStart(){
- ticketStop(); ticketData.classList.add('hidden');
- if(!window.ZXingBrowser){ticketSetStatus('Scanner-Bibliothek konnte nicht geladen werden. Bitte Internetverbindung prüfen.','warn');return}
- try{
-   ticketReader=new ZXingBrowser.BrowserMultiFormatReader();
-   ticketSetStatus('Kamera aktiv – Code vor die Kamera halten …');
-   ticketControls=await ticketReader.decodeFromConstraints({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false},ticketVideo,(result,error)=>{
-     if(result){ticketHandleResult(result);}
-   });
- }catch(e){
-   console.error(e);
-   ticketSetStatus('Kamerazugriff nicht möglich. Bitte Kameraberechtigung erlauben und die Seite über HTTPS öffnen.','warn');
- }
-}
-function ticketHandleResult(result){
- const raw=typeof result.getText==='function'?result.getText():String(result.text||'');
- if(!raw)return;
- ticketStop();
- ticketData.classList.remove('hidden');
- ticketData.innerHTML='<b>Erkannter Code:</b><br>'+esc(raw);
- // Bewusst keine erfundene Gültigkeitsprüfung: Ohne offizielle Prüfschnittstelle ist ein
- // lesbarer Code allein kein Beweis für die aktuelle Gültigkeit des Tickets.
- ticketSetStatus('CODE ERKANNT – GÜLTIGKEIT NICHT VERIFIZIERBAR','warn');
- const fmt=result.getBarcodeFormat?.();
- if(fmt)ticketData.innerHTML+='<br><br><span class="muted">Format: '+esc(String(fmt))+'</span>';
-}
-document.getElementById('ticketScanBtn')?.addEventListener('click',ticketOpen);
-document.getElementById('ticketClose')?.addEventListener('click',ticketClose);
-document.getElementById('ticketDone')?.addEventListener('click',ticketClose);
-document.getElementById('ticketRestart')?.addEventListener('click',ticketStart);
-ticketModal?.addEventListener('click',e=>{if(e.target===ticketModal)ticketClose()});
+// --- Ticket-/KlimaTicket-Scanner ---
+(function initTicketScanner(){
+  const btn=document.getElementById('ticketScanBtn');
+  const modal=document.getElementById('ticketModal');
+  const video=document.getElementById('ticketVideo');
+  const status=document.getElementById('ticketStatus');
+  const data=document.getElementById('ticketData');
+  const close=document.getElementById('ticketClose');
+  const done=document.getElementById('ticketDone');
+  const restart=document.getElementById('ticketRestart');
+  if(!btn||!modal||!video)return;
+  let reader=null,controls=null,stream=null;
+  function setStatus(t,cls=''){status.textContent=t;status.className='ticketStatus'+(cls?' '+cls:'');}
+  function stop(){try{controls&&controls.stop()}catch(e){} controls=null;try{reader&&reader.reset()}catch(e){} reader=null;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.srcObject=null;}
+  function show(){modal.classList.add('open');modal.setAttribute('aria-hidden','false');data.classList.add('hidden');data.textContent='';start();}
+  function hide(){stop();modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  async function start(){
+    stop();data.classList.add('hidden');
+    if(!window.ZXingBrowser){setStatus('Scanner konnte nicht geladen werden. Bitte Internetverbindung prüfen.','warn');return;}
+    try{
+      setStatus('Kamera wird vorbereitet …');
+      reader=new ZXingBrowser.BrowserMultiFormatReader();
+      const devices=await ZXingBrowser.BrowserCodeReader.listVideoInputDevices();
+      const preferred=devices.find(d=>/back|rear|environment|rück/i.test(d.label))||devices[devices.length-1];
+      if(!preferred)throw new Error('Keine Kamera gefunden.');
+      controls=await reader.decodeFromVideoDevice(preferred.deviceId,video,(result,err)=>{
+        if(result){
+          const text=result.getText();
+          const format=result.getBarcodeFormat?result.getBarcodeFormat().toString():'Code';
+          setStatus('✓ Code erkannt – technische Prüfung erfolgreich.','good');
+          data.classList.remove('hidden');
+          data.innerHTML='<b>Erkannt:</b> '+esc(text)+'<br><span class="muted">Format: '+esc(format)+'</span><br><br><span class="muted">Hinweis: Das Auslesen bestätigt nicht automatisch die aktuelle Ticketgültigkeit. Ohne offizielle Online-Prüfung wird keine Gültigkeit behauptet.</span>';
+          try{controls.stop()}catch(e){} controls=null;
+        }
+      });
+    }catch(e){setStatus('Kamera konnte nicht gestartet werden. Bitte Kamerazugriff erlauben.','warn');}
+  }
+  btn.addEventListener('click',show);close.addEventListener('click',hide);done.addEventListener('click',hide);restart.addEventListener('click',start);
+  modal.addEventListener('click',e=>{if(e.target===modal)hide()});
+})();
