@@ -27,18 +27,30 @@ function swapStops(){const a=selected.from,b=selected.to;selected.from=b;selecte
 
 document.addEventListener('click',e=>{if(!e.target.closest('.field')){document.getElementById('fromSug').hidden=true;document.getElementById('toSug').hidden=true}});
 setupField('from');setupField('to');
-document.getElementById('clearFrom').addEventListener('click',()=>clearField('from'));document.getElementById('clearTo').addEventListener('click',()=>clearField('to'));document.getElementById('swapBtn').addEventListener('click',swapStops);
+
+const clearFromEl = document.getElementById('clearFrom');
+if (clearFromEl) clearFromEl.addEventListener('click', () => clearField('from'));
+const clearToEl = document.getElementById('clearTo');
+if (clearToEl) clearToEl.addEventListener('click', () => clearField('to'));
+const swapBtnEl = document.getElementById('swapBtn');
+if (swapBtnEl) swapBtnEl.addEventListener('click', swapStops);
+const manualBtnEl = document.getElementById('manualBtn');
+if (manualBtnEl) manualBtnEl.addEventListener('click', () => document.getElementById('from').focus());
 
 async function getRoute(a,b){const q=`${a.lon},${a.lat};${b.lon},${b.lat}`;const urls=[`https://router.project-osrm.org/route/v1/driving/${q}?overview=full&geometries=geojson&alternatives=false&steps=false`,`https://routing.openstreetmap.de/routed-car/route/v1/driving/${q}?overview=full&geometries=geojson&alternatives=false&steps=false`];let last='';for(const u of urls){try{const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(!j.routes?.length)throw new Error('Keine Straßenroute gefunden');return j.routes[0]}catch(e){last=e.message}}throw new Error(last||'Routenserver nicht erreichbar')}
-function fareBoxForZone(z){const n=TARIF_2026.normal[z-1],s=TARIF_2026.senior[z-1],sp=TARIF_2026.spar[z-1],f=TARIF_2026.family[z-1];if(n==null)return `<div class="warn">Für ${z} Zonen ist kein aktueller Einzelkartentarif hinterlegt.</div>`;const rows=[['Normal',n],['Senioren',s],['Sparpreis',sp],['Familien',f]];return `<div class="faregrid">${rows.map(([label,base])=>`<div class="fareitem"><b>${label}</b><div class="fareline"><span>Kärntner Linien</span><strong>${fmtEuro(base)}</strong></div><div class="fareline"><span>Ruf:Zu Komfort</span><strong>${fmtEuro(COMFORT_SURCHARGE)}</strong></div><div class="fareline total"><span>Ruf:Zu gesamt</span><strong>${fmtEuro(base+COMFORT_SURCHARGE)}</strong></div></div>`).join('')}</div><div class="muted" style="margin-top:9px">Tarifbasis: Kärntner Linien, gültig ab 01.07.2026. Ruf:Zu berechnet zusätzlich 2,00 € Komfortzuschlag. Bei gültiger Verbund-Zeitkarte fällt laut Ruf:Zu-Information nur der Komfortzuschlag an.</div>`}
-function renderZones(seq,label){
-  const chips=seq.map(z=>`<span class="zonechip">${esc(String(z))}</span>`).join('');
-  document.getElementById('zoneText').innerHTML=`<b>${seq.length} Zonen</b>`;
-  document.getElementById('zonePath').innerHTML=`<div class="routeZones">${esc(label)}</div><div class="zonechips">${chips}</div>`;
-  document.getElementById('fareBox').innerHTML=fareBoxForZone(seq.length);
-  document.getElementById('zoneMessage').innerHTML='<div class="good">✓ Tarifzonen stammen aus der hinterlegten Tarifzonenbasis. Die Straßenroute wird nur für Entfernung und Navigation verwendet.</div>';
-}
 
+function fareBoxForZone(z){const n=TARIF_2026.normal[z-1],s=TARIF_2026.senior[z-1],sp=TARIF_2026.spar[z-1],f=TARIF_2026.family[z-1];if(n==null)return `<div class="warn">Für ${z} Zonen ist kein aktueller Einzelkartentarif hinterlegt.</div>`;const rows=[['Normal',n],['Senioren',s],['Sparpreis',sp],['Familien',f]];return `<div class="faregrid">${rows.map(([label,base])=>`<div class="fareitem"><b>${label}</b><div class="fareline"><span>Kärntner Linien</span><strong>${fmtEuro(base)}</strong></div><div class="fareline"><span>Ruf:Zu Komfort</span><strong>${fmtEuro(COMFORT_SURCHARGE)}</strong></div><div class="fareline total"><span>Ruf:Zu gesamt</span><strong>${fmtEuro(base+COMFORT_SURCHARGE)}</strong></div></div>`).join('')}</div><div class="muted" style="margin-top:9px">Tarifbasis: Kärntner Linien, gültig ab 01.07.2026. Ruf:Zu berechnet zusätzlich 2,00 € Komfortzuschlag. Bei gültiger Verbund-Zeitkarte fällt laut Ruf:Zu-Information nur der Komfortzuschlag an.</div>`}
+
+function renderZones(seq, label, verified){
+  const chips = seq.map(z => `<span class="zonechip">${esc(String(z))}</span>`).join('');
+  document.getElementById('zoneText').innerHTML = `<b>${seq.length} Zonen</b>`;
+  document.getElementById('zonePath').innerHTML =
+    `<div class="routeZones">${esc(label)}</div><div class="zonechips">${chips}</div>`;
+  document.getElementById('fareBox').innerHTML = fareBoxForZone(seq.length);
+  document.getElementById('zoneMessage').innerHTML = verified
+    ? '<div class="good">✓ Verifizierte Tarifstrecke. Zonen stammen aus der geprüften Zuordnung.</div>'
+    : '<div class="warn">⚠ Automatische Zonenzuordnung anhand der hinterlegten Zonenanker. Bis die vollständige Tarifzonenbasis eingespielt ist, ist dieser Wert eine Näherung. Für den verbindlichen Preis bitte die offizielle Preisauskunft verwenden.</div>';
+}
 
 async function calculateTrip(){
   const pair=getSelectedPair();
@@ -55,7 +67,6 @@ async function calculateTrip(){
   const nav=`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(a.lat+','+a.lon)}&destination=${encodeURIComponent(b.lat+','+b.lon)}&travelmode=driving&dir_action=navigate`;
   document.getElementById('nav').href=nav;
 
-  // Erst Straßenroute abrufen, damit ihre Geometrie für die Zonenermittlung genutzt werden kann.
   document.getElementById('distanceText').textContent='Berechne …';
   document.getElementById('distanceNote').textContent='Straßenroute wird ermittelt …';
 
@@ -74,9 +85,6 @@ async function calculateTrip(){
     document.getElementById('distanceNote').textContent='Straßenroute nicht erreichbar. Zonen werden direkt anhand der Standortkoordinaten berechnet.';
   }
 
-  // Zonenberechnung: verifizierte Strecke ODER dynamisch aus der PDF-basierten Zonendatenbasis.
-  const key=stopCode(a)+'|'+stopCode(b);
-  const isVerified=VERIFIED_ROUTES.has(key);
   const res=getRouteZoneSequence(a,b,routeGeom);
 
   if(!res || !res.sequence || !res.sequence.length){
@@ -87,16 +95,22 @@ async function calculateTrip(){
     return;
   }
 
-  renderZones(res.sequence,isVerified?'Verifizierte Tarifstrecke':'Automatische Zonenermittlung');
+  renderZones(
+    res.sequence,
+    res.verified ? 'Verifizierte Tarifstrecke' : 'Automatische Zuordnung (Näherung, ungeprüft)',
+    !!res.verified
+  );
 }
 
 document.getElementById('calcBtn').addEventListener('click',calculateTrip);
 
 async function copyTrip(){const a=selected.from,b=selected.to;if(!a||!b){alert('Bitte zuerst Von und Nach auswählen.');return}const text=`Von: ${a.name}\nNach: ${b.name}`;try{await navigator.clipboard.writeText(text);alert('Von/Nach wurde kopiert.')}catch(e){prompt('Bitte diesen Text kopieren:',text)}}
 function openOfficial(){const a=selected.from,b=selected.to;const text=a&&b?`Von: ${a.name}\nNach: ${b.name}`:'';if(text)navigator.clipboard?.writeText(text).catch(()=>{});window.open(OFFICIAL_PRICE_URL,'_blank','noopener')}
-// OCR
+
 const scanBtn=document.getElementById('scanBtn'),scanInput=document.getElementById('scanInput'),ocrStatus=document.getElementById('ocrStatus');
-document.getElementById('manualBtn').addEventListener('click',()=>document.getElementById('from').focus());scanBtn.addEventListener('click',()=>scanInput.click());scanInput.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;await scanTimetable(file);scanInput.value=''})
+if (scanBtn) scanBtn.addEventListener('click',()=>scanInput.click());
+scanInput.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;await scanTimetable(file);scanInput.value=''})
+
 function norm(s){return String(s||'').toUpperCase().replace(/[–—−]/g,'-').replace(/\s+/g,' ').trim()}
 function codeDistance(a,b){
   a=String(a||'');b=String(b||'');
@@ -113,7 +127,6 @@ function resolveOcrCode(raw){
   let best=null,bd=99;
   for(const c of candidates){
     let x=r;
-    // Typical OCR confusions in the three-digit part of a stop code.
     if(x.length===5)x=x.slice(0,2)+x.slice(2).replace(/[OQD]/g,'0').replace(/[IL]/g,'1').replace(/S/g,'5').replace(/B/g,'8');
     const d=codeDistance(x,c);
     if(d<bd){bd=d;best=c}
@@ -155,13 +168,10 @@ async function scanTimetable(file){
     const text=data.text||'';
     console.log('Ruf:Zu OCR-Text:',text);
 
-    // Nur die beiden benötigten Felder werden aus dem Foto übernommen.
-    // Abfahrt/Ankunft sowie Einstieg/Ausstieg gehören bewusst NICHT mehr zur Eingabe.
     const codes=extractOcrCodes(text);
     let from=findStopInText(text,codes[0]);
     let to=findStopInText(text,codes[1]);
 
-    // Wenn nur ein Code erkannt wurde, versuche Start/Ziel über die Zeilen des Fotos.
     if(!from||!to){
       const lines=text.split(/\r?\n/).map(norm).filter(Boolean);
       const lineHits=[];
@@ -194,6 +204,7 @@ async function scanTimetable(file){
   }
 }
 document.getElementById('officialBtn').addEventListener('click',openOfficial);
+document.getElementById('copyBtn').addEventListener('click',copyTrip);
 
 if(stops.length!==536)console.warn('Haltestellen-Datensatz: erwartet 536, gefunden',stops.length);
 if(!stops.some(s=>stopCode(s)==='SV104'))console.warn('SV104 fehlt');
