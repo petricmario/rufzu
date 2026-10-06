@@ -2,47 +2,76 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#ffb300">
-<meta name="description" content="Ruf:Zu – Tarif- und Routenberechnung für Zollfeld & Umgebung">
-<title>Ruf:Zu – Fahrt planen</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ruf:Zu – Fahrt & Tarifzonen</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-:root{--orange:#ffb300;--orange2:#ff9700;--ink:#20262d;--muted:#68717a;--paper:#fff;--line:#e9edf1;--soft:#fff7df;--green:#16865a;--shadow:0 12px 35px rgba(28,34,40,.12);--radius:22px}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html{background:#f3f5f7}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:#f3f5f7;min-height:100vh}button,input{font:inherit}button{cursor:pointer;border:0}.app{max-width:760px;margin:auto;background:#f3f5f7;min-height:100vh;overflow:hidden}
-.hero{position:relative;background:linear-gradient(135deg,#ffbe16 0%,#ffad00 58%,#ff9700 100%);padding:20px 18px 64px;color:#1e2328;overflow:hidden}.hero:after{content:"";position:absolute;left:-12%;right:-12%;bottom:-80px;height:130px;background:#f3f5f7;border-radius:50% 50% 0 0/100% 100% 0 0}.brand{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2}.brandtext{display:flex;align-items:center}.brandmark{width:48px;height:35px;position:relative;margin-right:9px}.brandmark:before,.brandmark:after{content:"";position:absolute;border:5px solid #fff;border-left-color:transparent;border-radius:50%;transform:skewX(-18deg) rotate(-12deg)}.brandmark:before{width:40px;height:18px;top:1px;left:2px}.brandmark:after{width:30px;height:12px;top:13px;left:10px}.ruf{font-size:35px;line-height:1;font-weight:900;font-style:italic;letter-spacing:-1.5px}.zu{color:#fff}.tag{font-size:12px;font-style:italic;margin-top:4px}.phone{font-weight:800;font-size:12px;text-align:right}.hero h1{position:relative;z-index:2;font-size:28px;line-height:1.08;margin:28px 0 7px;font-weight:900;max-width:650px}.hero p{position:relative;z-index:2;margin:0;max-width:620px;font-size:15px;line-height:1.45;font-weight:600}.content{padding:0 14px 30px;position:relative;z-index:3}.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.04);padding:18px;margin-top:-28px}.section-title{font-weight:900;text-transform:uppercase;letter-spacing:.5px;font-size:14px;margin-bottom:12px}
-.vehicle-hero{margin:0 0 13px;background:#20262d;color:#fff;border-radius:18px;padding:12px;display:flex;align-items:center;gap:13px;overflow:hidden}.vehicle-photo{width:132px;height:78px;border-radius:13px;background:#3a4249;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 132px}.vehicle-photo img{width:100%;height:100%;object-fit:contain;display:block}.vehicle-copy b{display:block;font-size:16px}.vehicle-copy span{display:block;font-size:12px;color:#c8ced3;margin-top:4px;line-height:1.35}
-.field{position:relative;margin-bottom:11px}.label{font-size:12px;color:#68717a;font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin:0 0 5px 4px}.inputwrap{display:flex;align-items:center;background:#f7f8f9;border:1px solid #dfe4e8;border-radius:15px;min-height:57px}.pin{width:42px;text-align:center;font-size:21px}.inputwrap input{flex:1;min-width:0;border:0;background:transparent;outline:0;padding:14px 5px;font-weight:700;color:var(--ink)}.clear{background:transparent;color:#8b949c;font-size:22px;padding:10px 14px}.suggestions{position:absolute;left:0;right:0;top:81px;background:#fff;border:1px solid #dfe4e8;border-radius:15px;box-shadow:0 15px 35px rgba(0,0,0,.16);z-index:50;overflow:hidden;max-height:300px;overflow-y:auto}.suggestions[hidden]{display:none}.sug{padding:13px 15px;border-bottom:1px solid #eef0f2;display:flex;flex-direction:column;gap:3px}.sug:last-child{border-bottom:0}.sug b{font-size:14px}.sug span{font-size:12px;color:#7a838b}.scanrow{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 12px}.scanbtn,.secondary{min-height:48px;border-radius:13px;font-weight:900}.scanbtn{background:var(--orange);color:#20262d}.manualbtn{background:#fff;border:1px solid #dfe4e8;color:#3d454c}.ocrstatus{margin:-3px 0 12px;font-size:12px;color:#66717a;line-height:1.4}.ocrstatus.good{color:#16865a}.ocrstatus.warn{color:#8a5b00}.timegrid,.passgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.miniinput{width:100%;min-height:50px;border:1px solid #dfe4e8;border-radius:13px;padding:12px;font-weight:700;background:#f7f8f9;outline:0}.calc{width:100%;min-height:58px;border-radius:16px;background:var(--ink);color:#fff;font-weight:900;letter-spacing:.3px;font-size:16px;box-shadow:0 8px 20px rgba(32,38,45,.18);margin-top:5px}.subactions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}.secondary{background:#fff;border:1px solid #dfe4e8;color:#3d454c}
-.result{display:none;margin-top:14px}.resultcard{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}.resulthead{background:var(--ink);color:#fff;padding:19px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1px;opacity:.7;font-weight:900}.route{margin-top:8px;font-size:14px;line-height:1.6}.zonehero{background:linear-gradient(135deg,#ffbe16,#ff9700);padding:20px}.zonebig{font-size:38px;font-weight:950;letter-spacing:-1px}.zonepath{margin-top:8px;font-size:13px;font-weight:900;word-break:break-word}.distance{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}.distance strong{font-size:21px}.distance small{display:block;color:var(--muted);line-height:1.35;margin-top:3px}.info{padding:14px 20px;font-size:12px;color:#55606a;background:#fafbfc}.good{color:var(--green);font-weight:800;background:#edf9f3;border:1px solid #cfeedd;padding:11px 12px;border-radius:12px}.warn{color:#8a5b00;background:#fff6dd;border:1px solid #f0d58b;padding:11px 12px;border-radius:12px}.farebox{padding:16px 20px}.fare-title{font-weight:900;margin-bottom:12px}.faregrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.fareitem{border:1px solid #e4e8eb;border-radius:15px;padding:12px;background:#fff}.fareitem>b{font-size:13px}.fareline{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:11px;color:#69727a}.fareline strong{font-size:13px;color:#222}.fareline.total{border-top:1px solid #edf0f2;padding-top:8px;color:#222}.fareline.total strong{font-size:16px}.muted{font-size:11px;color:#747d85;line-height:1.45}.resultactions{padding:0 20px 20px;display:grid;grid-template-columns:1fr 1fr;gap:10px}.primarylink,.orangeLink{display:flex;align-items:center;justify-content:center;text-decoration:none;min-height:52px;border-radius:14px;font-weight:900}.primarylink{background:var(--ink);color:#fff}.orangeLink{background:var(--orange);color:#20262d}.mapcard{margin-top:14px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}.maphead{padding:15px 18px;font-weight:900;display:flex;justify-content:space-between}.maphead span{font-size:11px;color:#7b848c;font-weight:700}.map{height:350px}.footer{padding:22px 18px 34px;text-align:center;color:#747d85;font-size:11px;line-height:1.5}.footer b{color:#30373d}.official{color:#30373d;text-decoration:underline}.routeZones{font-weight:900;line-height:1.5}.zonechips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.zonechip{background:rgba(255,255,255,.55);padding:5px 8px;border-radius:999px;font-size:11px;font-weight:900}.leaflet-control-attribution{font-size:9px}
-@media(min-width:700px){.hero{padding-left:34px;padding-right:34px}.content{padding-left:24px;padding-right:24px}.hero h1{font-size:34px}.map{height:430px}}@media(max-width:430px){.ruf{font-size:31px}.phone{font-size:11px}.hero h1{font-size:25px}.hero{padding-top:18px}.vehicle-photo{width:104px;height:70px;flex-basis:104px}.vehicle-copy span{font-size:11px}.faregrid{grid-template-columns:1fr}.subactions,.scanrow,.timegrid,.passgrid{grid-template-columns:1fr 1fr}.map{height:320px}}
+:root{--bg:#f4f6f8;--card:#fff;--ink:#18202a;--muted:#68717d;--accent:#1769e0;--accent2:#0f4fae;--line:#dfe4ea;--ok:#138a4b;--warn:#a56300;--shadow:0 8px 28px rgba(18,31,48,.09)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}.wrap{max-width:900px;margin:auto;padding:12px}.hero{background:linear-gradient(180deg,#fff,#eef3f8);border:1px solid var(--line);border-radius:20px;padding:10px 14px 0;box-shadow:var(--shadow);overflow:hidden}.vehicleHero{text-align:center;height:155px;display:flex;align-items:flex-end;justify-content:center}.vehicleHero img{max-width:94%;max-height:150px;object-fit:contain}.brand{font-weight:800;font-size:26px;margin:4px 0}.sub{color:var(--muted);margin:0 0 12px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:12px;box-shadow:var(--shadow)}h2{font-size:18px;margin:0 0 12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:650px){.grid{grid-template-columns:1fr}}.field{position:relative}.label{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 5px}.inputrow{display:flex;gap:6px}.inputrow input{flex:1}.inputrow button{width:42px}.input{width:100%;height:48px;border:1px solid #cfd6df;border-radius:12px;padding:0 13px;font-size:15px;background:#fff;color:var(--ink)}button{border:0;border-radius:12px;min-height:46px;padding:0 14px;font-weight:800;cursor:pointer}.smallbtn{background:#edf1f5;color:#29323c}.primary{background:var(--accent);color:#fff}.primary:active{background:var(--accent2)}.scan{background:#111d2b;color:#fff}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}.swap{margin:10px auto 0;display:block;background:#eef3f8}.sugs{position:absolute;z-index:1000;left:0;right:0;top:74px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);max-height:300px;overflow:auto}.sug{padding:10px 12px;border-bottom:1px solid #edf0f3;cursor:pointer}.sug b{display:block;font-size:14px}.sug span{font-size:12px;color:var(--muted)}.ocrstatus{margin-top:9px;padding:9px 11px;border-radius:10px;background:#eef3f8;color:#394654;font-size:13px}.ocrstatus.good{background:#eaf7ef;color:var(--ok)}.ocrstatus.warn{background:#fff4e2;color:var(--warn)}.hidden{display:none!important}.times{display:grid;grid-template-columns:1fr 1fr;gap:10px}.result{display:none}.metric{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metricbox{border:1px solid var(--line);border-radius:12px;padding:12px}.metricbox strong{font-size:22px;display:block}.routeZones{font-weight:700;margin:8px 0}.zonechips{display:flex;flex-wrap:wrap;gap:7px}.zonechip{padding:7px 10px;background:#eef3f8;border-radius:999px;font-weight:700;font-size:13px}.good{background:#eaf7ef;color:var(--ok);padding:10px;border-radius:10px}.warn{background:#fff4e2;color:var(--warn);padding:10px;border-radius:10px}.faregrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}@media(max-width:650px){.faregrid{grid-template-columns:1fr}}.fareitem{border:1px solid var(--line);border-radius:12px;padding:10px}.fareline{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}.fareline.total{border-top:1px solid var(--line);margin-top:4px;padding-top:7px;font-weight:800}.muted{color:var(--muted);font-size:12px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}@media(max-width:650px){.actions{grid-template-columns:1fr}}#map{height:360px;border-radius:14px;overflow:hidden}.foot{font-size:11px;color:var(--muted);padding:12px 3px 20px}
 </style>
 </head>
 <body>
-<div class="app">
-<header class="hero">
-  <div class="brand"><div class="brandtext"><div class="brandmark"></div><div><div class="ruf">Ruf:<span class="zu">Zu</span></div><div class="tag">Rufbus Zollfeld &amp; Umgebung</div></div></div><div class="phone">Ruf:Zu<br>04 212 / 93083</div></div>
-  <h1>Fahrt planen. Zonen prüfen. Losfahren.</h1>
-  <p>Start und Ziel frei wählen. Die Tarifzonen werden unabhängig von den Straßenkilometern berechnet.</p>
-</header>
-<main class="content">
-<section class="card">
-  <div class="section-title">Deine Fahrt</div>
-  <div class="vehicle-hero"><div class="vehicle-photo"><img src="rufzu_8sitzer.png" alt="Ruf:Zu 8-Sitzer"></div><div class="vehicle-copy"><b>Ruf:Zu · 8-Sitzer</b><span>Auto-orientierte Fahrtplanung mit direkter Straßennavigation.</span></div></div>
-  <div class="scanrow"><button class="scanbtn" id="scanBtn" type="button">📷 Fahrplan abfotografieren</button><button class="secondary manualbtn" id="manualBtn" type="button">✎ HÄNDISCH EINGEBEN</button><input id="scanInput" type="file" accept="image/*" capture="environment" hidden></div>
-  <div class="ocrstatus" id="ocrStatus">Foto-Scan: Foto aufnehmen → OCR auslesen → Felder prüfen → berechnen. Die erkannte Eingabe bleibt editierbar.</div>
-  <div class="field"><div class="label">Von · Startpunkt</div><div class="inputwrap"><div class="pin">●</div><input id="from" autocomplete="off" placeholder="Start-Haltestelle suchen …"><button class="clear" id="clearFrom" aria-label="Start löschen">×</button></div><div class="suggestions" id="fromSug" hidden></div></div>
-  <div class="field"><div class="label">Nach · Ziel</div><div class="inputwrap"><div class="pin">◎</div><input id="to" autocomplete="off" placeholder="Ziel-Haltestelle suchen …"><button class="clear" id="clearTo" aria-label="Ziel löschen">×</button></div><div class="suggestions" id="toSug" hidden></div></div>
-  <div class="timegrid"><div class="field"><div class="label">Abfahrt</div><input class="miniinput" id="departTime" type="time"></div><div class="field"><div class="label">Ankunft</div><input class="miniinput" id="arriveTime" type="time"></div></div>
-  <div class="passgrid"><div class="field"><div class="label">Einstieg</div><input class="miniinput" id="boardCount" inputmode="numeric" placeholder="z. B. 1"></div><div class="field"><div class="label">Ausstieg</div><input class="miniinput" id="alightCount" inputmode="numeric" placeholder="z. B. 1"></div></div>
-  <button class="calc" id="calcBtn" type="button">TARIF &amp; ROUTE BERECHNEN</button>
-  <div class="subactions"><button class="secondary" id="swapBtn" type="button">⇄ VON / NACH TAUSCHEN</button><button class="secondary" id="officialBtn" type="button">€ OFFIZIELLE PREISAUSKUNFT</button></div>
+<div class="wrap">
+<section class="hero">
+  <div class="vehicleHero"><img src="rufzu_8sitzer.png" alt="Ruf:Zu 8-Sitzer"></div>
+  <div class="brand">Ruf:Zu</div>
+  <p class="sub">Fahrt auswählen · Tarifzonen prüfen · Straßenroute anzeigen</p>
 </section>
-<section class="result" id="result"><div class="resultcard"><div class="resulthead"><div class="eyebrow">Tarifberechnung</div><div class="route" id="routeText"></div></div><div class="zonehero"><div class="zonebig" id="zoneText">—</div><div class="zonepath" id="zonePath">Noch keine Fahrt berechnet.</div></div><div class="distance"><div><strong id="distanceText">—</strong><small id="distanceNote">Straßenroute ist nur ein Informationswert.</small></div><div>🚗</div></div><div class="info" id="zoneMessage"></div><div class="farebox"><div class="fare-title">Tarif</div><div id="fareBox"></div></div><div class="resultactions"><a class="primarylink" id="nav" href="#" target="_blank" rel="noopener">🧭 NAVIGATION</a><a class="orangeLink" id="zonePlan" href="https://www.kaerntner-linien.at/wp-content/uploads/tarifzonenplan-05-2026.pdf" target="_blank" rel="noopener">▦ ZONENPLAN</a></div></div></section>
-<section class="mapcard"><div class="maphead"><span>Ruf:Zu Haltestellen</span><span>536 Haltepunkte</span></div><div class="map" id="map"></div></section>
-<div class="footer"><b>Ruf:Zu · Rufbus Zollfeld &amp; Umgebung</b><br>Wichtig: Straßenkilometer bestimmen NICHT die Tarifzonen. Für eine verbindliche Preisabfrage bitte die offizielle Kärntner-Linien-Preisauskunft verwenden.</div>
-</main></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+<section class="card">
+  <h2>Fahrt</h2>
+  <div class="grid">
+    <div class="field">
+      <div class="label">Von · Startpunkt</div>
+      <div class="inputrow"><input class="input" id="from" autocomplete="off" placeholder="Start-Haltestelle eingeben"><button class="smallbtn" id="clearFrom" type="button">×</button></div>
+      <div class="sugs" id="fromSug" hidden></div>
+    </div>
+    <div class="field">
+      <div class="label">Nach · Ziel</div>
+      <div class="inputrow"><input class="input" id="to" autocomplete="off" placeholder="Ziel-Haltestelle eingeben"><button class="smallbtn" id="clearTo" type="button">×</button></div>
+      <div class="sugs" id="toSug" hidden></div>
+    </div>
+  </div>
+  <button class="swap" id="swapBtn" type="button">↕ Von / Nach tauschen</button>
+</section>
+
+<section class="card">
+  <h2>Start & Ziel übernehmen</h2>
+  <div class="actions">
+    <button class="scan" id="scanBtn" type="button">📷 Fahrplan abfotografieren</button>
+    <button class="smallbtn" id="manualBtn" type="button">✎ Händisch eingeben</button>
+  </div>
+  <input id="scanInput" class="hidden" type="file" accept="image/*" capture="environment">
+  <div id="ocrStatus" class="ocrstatus">Foto aufnehmen – Start und Ziel werden automatisch erkannt.</div>
+</section>
+
+<section class="card">
+  <button class="primary" id="calcBtn" type="button" style="width:100%">🚗 Tarif & Route berechnen</button>
+</section>
+
+<section class="card result" id="result">
+  <h2>Ergebnis</h2>
+  <div id="routeText"></div>
+  <div class="metric" style="margin-top:10px">
+    <div class="metricbox"><span class="muted">Tarifzonen</span><strong id="zoneText">–</strong></div>
+    <div class="metricbox"><span class="muted">Straßenentfernung</span><strong id="distanceText">–</strong><span class="muted" id="distanceNote"></span></div>
+  </div>
+  <div id="zonePath"></div>
+  <div id="zoneMessage" style="margin-top:10px"></div>
+  <div id="fareBox"></div>
+  <div class="actions">
+    <a id="nav" href="#" target="_blank" rel="noopener"><button type="button" class="primary" style="width:100%">🧭 Navigation öffnen</button></a>
+    <button id="officialBtn" type="button" class="smallbtn">Offizielle Preisauskunft</button>
+  </div>
+</section>
+
+<section class="card"><h2>Straßenkarte</h2><div id="map"></div></section>
+<div class="foot">Tarifzonen werden nicht aus Straßenkilometern abgeleitet. Die Straßenroute ist nur ein Informationswert für Entfernung und Navigation.</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="rufzu-daten.js"></script>
 <script src="rufzu-app.js"></script>
-</body></html>
+</body>
+</html>
