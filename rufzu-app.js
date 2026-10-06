@@ -159,39 +159,76 @@ if(TARIFF_ZONES.length<25)console.error('Tarifzonenbasis unvollständig');
 (function initTicketScanner(){
   const btn=document.getElementById('ticketScanBtn');
   const modal=document.getElementById('ticketModal');
-  const video=document.getElementById('ticketVideo');
+  const readerEl=document.getElementById('ticketReader');
   const status=document.getElementById('ticketStatus');
   const data=document.getElementById('ticketData');
   const close=document.getElementById('ticketClose');
-  const done=document.getElementById('ticketDone');
   const restart=document.getElementById('ticketRestart');
-  if(!btn||!modal||!video)return;
-  let reader=null,controls=null,stream=null;
-  function setStatus(t,cls=''){status.textContent=t;status.className='ticketStatus'+(cls?' '+cls:'');}
-  function stop(){try{controls&&controls.stop()}catch(e){} controls=null;try{reader&&reader.reset()}catch(e){} reader=null;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.srcObject=null;}
-  function show(){modal.classList.add('open');modal.setAttribute('aria-hidden','false');data.classList.add('hidden');data.textContent='';start();}
-  function hide(){stop();modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-  async function start(){
-    stop();data.classList.add('hidden');
-    if(!window.ZXingBrowser){setStatus('Scanner konnte nicht geladen werden. Bitte Internetverbindung prüfen.','warn');return;}
-    try{
-      setStatus('Kamera wird vorbereitet …');
-      reader=new ZXingBrowser.BrowserMultiFormatReader();
-      const devices=await ZXingBrowser.BrowserCodeReader.listVideoInputDevices();
-      const preferred=devices.find(d=>/back|rear|environment|rück/i.test(d.label))||devices[devices.length-1];
-      if(!preferred)throw new Error('Keine Kamera gefunden.');
-      controls=await reader.decodeFromVideoDevice(preferred.deviceId,video,(result,err)=>{
-        if(result){
-          const text=result.getText();
-          const format=result.getBarcodeFormat?result.getBarcodeFormat().toString():'Code';
-          setStatus('✓ Code erkannt – technische Prüfung erfolgreich.','good');
-          data.classList.remove('hidden');
-          data.innerHTML='<b>Erkannt:</b> '+esc(text)+'<br><span class="muted">Format: '+esc(format)+'</span><br><br><span class="muted">Hinweis: Das Auslesen bestätigt nicht automatisch die aktuelle Ticketgültigkeit. Ohne offizielle Online-Prüfung wird keine Gültigkeit behauptet.</span>';
-          try{controls.stop()}catch(e){} controls=null;
-        }
-      });
-    }catch(e){setStatus('Kamera konnte nicht gestartet werden. Bitte Kamerazugriff erlauben.','warn');}
+  if(!btn||!modal||!readerEl)return;
+
+  let scanner=null;
+  let running=false;
+  let lastText='';
+
+  function setStatus(t,cls=''){
+    status.textContent=t;
+    status.className='ticketStatus'+(cls?' '+cls:'');
   }
-  btn.addEventListener('click',show);close.addEventListener('click',hide);done.addEventListener('click',hide);restart.addEventListener('click',start);
+  function showResult(text,format){
+    data.classList.remove('hidden');
+    data.innerHTML='<b>Code erkannt</b><br><span class="muted">Format: '+esc(format||'unbekannt')+'</span><div class="code" style="margin-top:8px">'+esc(text)+'</div><div class="warn" style="margin-top:10px">NICHT VERIFIZIERBAR – der Barcode wurde erfolgreich gelesen, aber die aktuelle Ticketgültigkeit kann von dieser App nicht offiziell bestätigt werden.</div>';
+  }
+  async function stop(){
+    if(scanner && running){
+      try{await scanner.stop()}catch(e){}
+    }
+    if(scanner){try{scanner.clear()}catch(e){}}
+    scanner=null;running=false;
+  }
+  async function start(){
+    await stop();
+    data.classList.add('hidden');
+    data.textContent='';
+    lastText='';
+    if(typeof Html5Qrcode==='undefined'){
+      setStatus('Scanner-Bibliothek konnte nicht geladen werden. Internetverbindung prüfen.','warn');
+      return;
+    }
+    try{
+      setStatus('Kamera wird gestartet …');
+      scanner=new Html5Qrcode('ticketReader');
+      const formats=[];
+      const F=window.Html5QrcodeSupportedFormats||{};
+      ['QR_CODE','AZTEC','DATA_MATRIX','CODE_128','CODE_39','CODE_93','CODABAR','EAN_13','EAN_8','ITF','PDF_417','UPC_A','UPC_E'].forEach(k=>{if(F[k]!==undefined)formats.push(F[k])});
+      const config={fps:10,qrbox:{width:280,height:190},aspectRatio:1.5,disableFlip:false};
+      if(formats.length)config.formatsToSupport=formats;
+      await scanner.start({facingMode:'environment'},config,(decodedText,decodedResult)=>{
+        if(!decodedText || decodedText===lastText)return;
+        lastText=decodedText;
+        const format=decodedResult?.result?.format?.formatName||decodedResult?.result?.format?.toString()||'Barcode';
+        setStatus('✓ Code erkannt. Kamera wird beendet …','good');
+        showResult(decodedText,format);
+        stop();
+      },()=>{});
+      running=true;
+      setStatus('Kamera aktiv – Barcode/QR-Code in den Rahmen halten.');
+    }catch(e){
+      running=false;
+      setStatus('Kamera konnte nicht gestartet werden. Bitte Kamerazugriff erlauben und die Seite über HTTPS öffnen.','warn');
+    }
+  }
+  async function show(){
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
+    await start();
+  }
+  async function hide(){
+    await stop();
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden','true');
+  }
+  btn.addEventListener('click',show);
+  close.addEventListener('click',hide);
+  restart.addEventListener('click',start);
   modal.addEventListener('click',e=>{if(e.target===modal)hide()});
 })();

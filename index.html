@@ -9,7 +9,22 @@
 :root{--bg:#e9eef5;--card:#ffffff;--ink:#152238;--muted:#5e6b7b;--accent:#f28c28;--accent2:#d96d08;--navy:#102a43;--navy2:#174a73;--line:#ccd7e4;--ok:#16834b;--warn:#a45b00;--shadow:0 10px 30px rgba(16,42,67,.13)}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#dfe8f2 0,#eef3f8 35%,#e8edf3 100%);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}.wrap{max-width:900px;margin:auto;padding:12px}.hero{background:linear-gradient(135deg,#0e2942,#17618a 68%,#f28c28);border:0;border-radius:22px;padding:10px 14px 14px;box-shadow:0 12px 34px rgba(10,38,63,.22);overflow:hidden;color:#fff}.vehicleHero{text-align:center;height:160px;display:flex;align-items:flex-end;justify-content:center}.vehicleHero img{max-width:94%;max-height:155px;object-fit:contain;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}.brand{font-weight:900;font-size:28px;margin:6px 0 2px;letter-spacing:.2px}.sub{color:#eaf4fb;margin:0 0 2px}.card{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:17px;padding:14px;margin-top:12px;box-shadow:var(--shadow)}h2{font-size:18px;margin:0 0 12px;color:var(--navy)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:650px){.grid{grid-template-columns:1fr}}.field{position:relative}.label{font-size:12px;font-weight:800;color:var(--navy2);margin:0 0 5px}.inputrow{display:flex;gap:6px}.inputrow input{flex:1}.inputrow button{width:42px}.input{width:100%;height:48px;border:1px solid #b9c8d8;border-radius:12px;padding:0 13px;font-size:15px;background:#f5f8fb;color:var(--ink);outline:none}.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(242,140,40,.15)}button{border:0;border-radius:12px;min-height:46px;padding:0 14px;font-weight:800;cursor:pointer}.smallbtn{background:#e6edf5;color:#21364d}.primary{background:linear-gradient(135deg,#f28c28,#e57513);color:#fff;box-shadow:0 5px 12px rgba(229,117,19,.22)}.primary:active{background:var(--accent2)}.scan{background:#153e5d;color:#fff}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}.swap{margin:10px auto 0;display:block;background:#e6eef6;color:#173957}.sugs{position:absolute;z-index:1000;left:0;right:0;top:74px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);max-height:300px;overflow:auto}.sug{padding:10px 12px;border-bottom:1px solid #edf0f3;cursor:pointer}.sug b{display:block;font-size:14px}.sug span{font-size:12px;color:var(--muted)}.ocrstatus{margin-top:9px;padding:10px 11px;border-radius:10px;background:#e8f1f8;color:#29445c;font-size:13px;border-left:4px solid var(--accent)}.ocrstatus.good{background:#e9f7ef;color:var(--ok);border-left-color:var(--ok)}.ocrstatus.warn{background:#fff3df;color:var(--warn);border-left-color:var(--warn)}.hidden{display:none!important}.result{display:none}.metric{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metricbox{border:1px solid #c8d6e4;border-radius:13px;padding:12px;background:linear-gradient(145deg,#f7fafc,#edf4f9)}.metricbox strong{font-size:22px;display:block;color:var(--navy)}.routeZones{font-weight:800;margin:10px 0 8px;color:var(--navy)}.zonechips{display:flex;flex-wrap:wrap;gap:7px}.zonechip{padding:8px 11px;border-radius:999px;font-weight:900;font-size:13px;border:1px solid rgba(0,0,0,.08)}.z1{background:#ffd7db;color:#9b1c2d}.z2{background:#ffe0b0;color:#8b4d00}.z3{background:#fff0a8;color:#806300}.z4{background:#d7f1c8;color:#216b29}.z5{background:#cfe8ff;color:#15558a}.z6{background:#b9ddff;color:#114e85}.z7{background:#ead1ef;color:#704078}.z8{background:#e6c9f0;color:#71377d}.good{background:#e9f7ef;color:var(--ok);padding:10px;border-radius:10px}.warn{background:#fff4e2;color:var(--warn);padding:10px;border-radius:10px}.faregrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}@media(max-width:650px){.faregrid{grid-template-columns:1fr}}.fareitem{border:1px solid var(--line);border-radius:12px;padding:10px;background:#f8fafc}.fareline{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}.fareline.total{border-top:1px solid var(--line);margin-top:4px;padding-top:7px;font-weight:800;color:var(--navy)}.muted{color:var(--muted);font-size:12px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}@media(max-width:650px){.actions{grid-template-columns:1fr}}#map{height:360px;border-radius:14px;overflow:hidden;border:1px solid #b9c8d8}.foot{font-size:11px;color:#53677b;padding:12px 3px 20px;text-align:center}.zoneLegend{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.zoneLegend span{padding:5px 8px;border-radius:8px;font-size:11px;font-weight:800}.legendTitle{font-size:12px;font-weight:800;color:var(--navy2);margin-top:12px}
 
-.ticketBtn{background:linear-gradient(135deg,#153e5d,#17618a);color:#fff;box-shadow:0 6px 14px rgba(21,62,93,.22);font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%}.ticketBtn:active{transform:translateY(1px)}.ticketSub{font-size:11px;font-weight:600;opacity:.85;margin-top:2px}.ticketModal{position:fixed;inset:0;background:rgba(8,24,38,.82);z-index:5000;display:none;align-items:center;justify-content:center;padding:14px}.ticketModal.open{display:flex}.ticketPanel{width:min(520px,100%);background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)}.ticketHead{padding:14px 16px;background:linear-gradient(135deg,#102a43,#17618a);color:#fff;display:flex;justify-content:space-between;align-items:center}.ticketHead strong{font-size:18px}.ticketClose{background:rgba(255,255,255,.14);color:#fff;min-width:44px}.ticketBody{padding:14px}.ticketVideoWrap{position:relative;background:#081722;border-radius:14px;overflow:hidden;aspect-ratio:4/3}.ticketVideo{width:100%;height:100%;object-fit:cover;display:block}.ticketFrame{position:absolute;left:12%;right:12%;top:20%;bottom:20%;border:3px solid #f28c28;border-radius:16px;box-shadow:0 0 0 999px rgba(0,0,0,.18)}.ticketHint{text-align:center;font-size:12px;color:var(--muted);margin:10px 0}.ticketStatus{padding:11px;border-radius:11px;background:#e8f1f8;color:#29445c;font-size:13px}.ticketStatus.good{background:#e9f7ef;color:var(--ok)}.ticketStatus.warn{background:#fff4e2;color:var(--warn)}.ticketData{margin-top:10px;padding:11px;border:1px solid var(--line);border-radius:11px;background:#f8fafc;word-break:break-word;font-size:12px}.ticketActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}@media(max-width:650px){.ticketActions{grid-template-columns:1fr}}
+.ticketScanBtn{width:100%;background:linear-gradient(135deg,#153e5d,#17618a);color:#fff;font-size:16px;box-shadow:0 6px 16px rgba(21,62,93,.22)}
+.ticketScanBtn:active{transform:scale(.99)}
+.ticketHint{margin:8px 0 0;color:var(--muted);font-size:12px;text-align:center}
+.ticketModal{position:fixed;inset:0;background:rgba(5,18,30,.82);z-index:5000;display:none;align-items:center;justify-content:center;padding:14px}
+.ticketModal.open{display:flex}
+.ticketPanel{width:min(620px,100%);max-height:94vh;overflow:auto;background:#fff;border-radius:20px;padding:14px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.ticketPanel h2{margin-bottom:8px}
+#ticketReader{width:100%;border-radius:14px;overflow:hidden;background:#071522;min-height:260px}
+#ticketReader video{width:100%!important;border-radius:14px}
+.ticketStatus{margin-top:10px;padding:10px 11px;border-radius:10px;background:#e8f1f8;color:#29445c;font-size:13px;border-left:4px solid var(--accent)}
+.ticketStatus.good{background:#e9f7ef;color:var(--ok);border-left-color:var(--ok)}
+.ticketStatus.warn{background:#fff3df;color:var(--warn);border-left-color:var(--warn)}
+.ticketResult{margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#f7fafc;word-break:break-word}
+.ticketResult .code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;white-space:pre-wrap}
+.ticketButtons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+@media(max-width:650px){.ticketButtons{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -38,11 +53,6 @@
 </section>
 
 <section class="card">
-  <h2>Fahrgastkontrolle</h2>
-  <button class="ticketBtn" id="ticketScanBtn" type="button">🎫 Ticket / KlimaTicket scannen<div class="ticketSub">QR · UIC · Aztec · Barcode</div></button>
-</section>
-
-<section class="card">
   <h2>Start & Ziel übernehmen</h2>
   <div class="actions">
     <button class="scan" id="scanBtn" type="button">📷 Fahrplan abfotografieren</button>
@@ -50,6 +60,12 @@
   </div>
   <input id="scanInput" class="hidden" type="file" accept="image/*" capture="environment">
   <div id="ocrStatus" class="ocrstatus">Foto aufnehmen – Start und Ziel werden automatisch erkannt.</div>
+</section>
+
+<section class="card">
+  <h2>🎫 Ticketkontrolle</h2>
+  <button class="ticketScanBtn" id="ticketScanBtn" type="button">📷 Ticket / KlimaTicket scannen</button>
+  <div class="ticketHint">QR · Aztec · DataMatrix · Code128 · weitere unterstützte Barcodes</div>
 </section>
 
 <section class="card">
@@ -77,24 +93,24 @@
 <div class="foot">Tarifzonen werden nicht aus Straßenkilometern abgeleitet. Die Straßenroute ist nur ein Informationswert für Entfernung und Navigation.</div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="rufzu-daten.js?v=20261006-ocr5"></script>
-<script src="rufzu-app.js?v=20261006-ocr5"></script>
 
 <div class="ticketModal" id="ticketModal" aria-hidden="true">
-  <div class="ticketPanel">
-    <div class="ticketHead"><strong>🎫 Ticket prüfen</strong><button class="ticketClose" id="ticketClose" type="button">✕</button></div>
-    <div class="ticketBody">
-      <div class="ticketVideoWrap"><video id="ticketVideo" class="ticketVideo" playsinline muted></video><div class="ticketFrame"></div></div>
-      <div class="ticketHint">Code innerhalb des Rahmens halten. QR-, UIC-/Aztec- und gängige Barcodes werden versucht.</div>
-      <div class="ticketStatus" id="ticketStatus">Kamera wird vorbereitet …</div>
-      <div class="ticketData hidden" id="ticketData"></div>
-      <div class="ticketActions"><button class="primary" id="ticketRestart" type="button">↻ Erneut scannen</button><button class="smallbtn" id="ticketDone" type="button">Schließen</button></div>
+  <div class="ticketPanel" role="dialog" aria-modal="true" aria-labelledby="ticketTitle">
+    <h2 id="ticketTitle">🎫 Ticket / KlimaTicket scannen</h2>
+    <div id="ticketReader"></div>
+    <div id="ticketStatus" class="ticketStatus">Kamera wird erst nach deiner Freigabe verwendet. Es werden keine Ticketdaten gespeichert.</div>
+    <div id="ticketData" class="ticketResult hidden"></div>
+    <div class="ticketButtons">
+      <button id="ticketRestart" class="ticketScanBtn" type="button">📷 Erneut scannen</button>
+      <button id="ticketClose" class="smallbtn" type="button">Schließen</button>
     </div>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="rufzu-daten.js?v=20261006-ocr5"></script>
+<script src="rufzu-app.js?v=20261006-ticket2"></script>
 </body>
 </html>
