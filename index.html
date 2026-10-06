@@ -21,7 +21,6 @@ button{cursor:pointer;border:0}
 .brandtext{display:flex;align-items:center;gap:12px;min-width:0}
 .brandmark{width:64px;height:44px;flex-shrink:0;display:block}
 .brandmark svg{width:100%;height:100%;display:block}
-.wordmark{display:flex;flex-direction:column;line-height:1}
 .ruf{font-size:32px;font-weight:900;font-style:italic;letter-spacing:-1.2px;color:var(--ink);white-space:nowrap}
 .ruf .zu{color:var(--orange)}
 .tag{font-size:11.5px;font-weight:700;color:var(--muted);margin-top:5px;letter-spacing:.2px;text-transform:uppercase}
@@ -153,10 +152,11 @@ button{cursor:pointer;border:0}
     <div class="scanrow">
       <button class="scanbtn" id="scanBtn" type="button">📷 Fahrplan<br>abfotografieren</button>
       <button class="scanbtn ticket" id="ticketScanBtn" type="button">🎫 Ticket<br>scannen</button>
-      <input id="scanInput" type="file" accept="image/*" capture="environment" hidden>
-      <input id="ticketScanInput" type="file" accept="image/*" capture="environment" hidden>
+      <input id="scanInput" type="file" accept="image/*" hidden>
+      <input id="ticketScanInput" type="file" accept="image/*" hidden>
     </div>
     <div class="ocrstatus" id="ocrStatus">Foto-Scan liest Von/Nach und startet die Berechnung automatisch.</div>
+    <div id="ocrRaw" style="display:none;margin-top:10px;background:#fff;border:1px solid #e4e8eb;border-radius:12px;padding:12px;font-size:11px;line-height:1.5"></div>
     <div class="ocrstatus" id="ticketOcrStatus" style="display:none"></div>
     <div class="ticketresult" id="ticketResult"></div>
     <div class="field" style="margin-top:14px">
