@@ -121,9 +121,9 @@ button{cursor:pointer;border:0}
   <div class="brand">
     <div class="brandtext">
       <div class="brandmark" aria-hidden="true">
-        <svg viewBox="0 0 80 52" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10 44 V16 Q10 6 22 6 H34 Q48 6 48 20 Q48 30 34 32 H20 M34 32 L50 44" fill="none" stroke="#f7941e" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M42 24 Q58 18 70 6" fill="none" stroke="#1c2024" stroke-width="8" stroke-linecap="round"/>
+        <svg viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg">
+          <path d="M30 52 Q55 50 82 14" fill="none" stroke="#1c2024" stroke-width="7" stroke-linecap="round"/>
+          <path d="M14 54 L14 14 Q14 6 22 6 L38 6 Q52 6 52 20 Q52 30 40 32 L22 32 M38 32 L52 54" fill="none" stroke="#f7941e" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
       <div>
@@ -141,7 +141,7 @@ button{cursor:pointer;border:0}
     <div class="section-title">Fahrt berechnen</div>
     <div class="vehicle-hero">
       <div class="vehicle-photo">
-        <img id="vehiclePhoto" src="8sitzer.jpg" alt="8-Sitzer Ruf:Zu" onload="this.style.display='block';document.getElementById('vehicleFallback').style.display='none'" onerror="this.style.display='none';document.getElementById('vehicleFallback').style.display='inline'">
+        <img id="vehiclePhoto" src="rufzu_8sitzer.png" alt="8-Sitzer Ruf:Zu" onload="this.style.display='block';document.getElementById('vehicleFallback').style.display='none'" onerror="this.style.display='none';document.getElementById('vehicleFallback').style.display='inline'">
         <span id="vehicleFallback">🚐</span>
       </div>
       <div class="vehicle-copy">
@@ -152,8 +152,8 @@ button{cursor:pointer;border:0}
     <div class="scanrow">
       <button class="scanbtn" id="scanBtn" type="button">📷 Fahrplan<br>abfotografieren</button>
       <button class="scanbtn ticket" id="ticketScanBtn" type="button">🎫 Ticket<br>scannen</button>
-      <input id="scanInput" type="file" accept="image/*" hidden>
-      <input id="ticketScanInput" type="file" accept="image/*" hidden>
+      <input id="scanInput" type="file" accept="image/*" capture="environment" hidden>
+      <input id="ticketScanInput" type="file" accept="image/*" capture="environment" hidden>
     </div>
     <div class="ocrstatus" id="ocrStatus">Foto-Scan liest Von/Nach und startet die Berechnung automatisch.</div>
     <div id="ocrRaw" style="display:none;margin-top:10px;background:#fff;border:1px solid #e4e8eb;border-radius:12px;padding:12px;font-size:11px;line-height:1.5"></div>
