@@ -7,7 +7,6 @@ let routeLine=null;
 function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function fmtEuro(v){return Number(v).toFixed(2).replace('.',',')+' €'}
 function stopCode(s){const m=String(s?.name||'').match(/^([A-Z]{2}\d{3})\s*-/i);return m?m[1].toUpperCase():''}
-function hav(a,b){const R=6371,p=Math.PI/180,dLat=(b.lat-a.lat)*p,dLon=(b.lon-a.lon)*p;const x=Math.sin(dLat/2)**2+Math.cos(a.lat*p)*Math.cos(b.lat*p)*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
 
 function getSelectedPair(){return selected.from && selected.to ? {from:selected.from,to:selected.to} : null;}
 
@@ -20,7 +19,6 @@ function setupField(id){const input=document.getElementById(id),box=document.get
 function renderSuggestions(id){const q=document.getElementById(id).value.trim().toLowerCase(),box=document.getElementById(id+'Sug');if(!q){box.hidden=true;return}const matches=stops.filter(s=>s.name.toLowerCase().includes(q)).slice(0,30);box.innerHTML=matches.length?matches.map(s=>`<div class="sug" data-index="${stops.indexOf(s)}"><b>${esc(s.name)}</b><span>${esc(s.group||'')}</span></div>`).join(''):'<div class="sug"><span>Keine passende Haltestelle gefunden</span></div>';box.querySelectorAll('[data-index]').forEach(el=>el.addEventListener('click',()=>pick(id,Number(el.dataset.index))));box.hidden=false}
 function pick(id,i){const s=stops[i];if(!s)return;selected[id]=s;document.getElementById(id).value=s.name;document.getElementById(id+'Sug').hidden=true;map.setView([s.lat,s.lon],15)}
 function clearField(id){selected[id]=null;document.getElementById(id).value='';document.getElementById(id+'Sug').hidden=true;document.getElementById(id).focus()}
-function swapStops(){const a=selected.from,b=selected.to;selected.from=b;selected.to=a;document.getElementById('from').value=b?.name||'';document.getElementById('to').value=a?.name||''}
 
 document.addEventListener('click',e=>{if(!e.target.closest('.field')){document.getElementById('fromSug').hidden=true;document.getElementById('toSug').hidden=true}});
 setupField('from');setupField('to');
@@ -110,25 +108,147 @@ function nameScore(text,stop){const t=norm(text),n=norm(stop.name),code=stopCode
 function findStopInText(text,codeHint){if(codeHint){const hit=findStopByCode(codeHint);if(hit)return hit}let best=null,score=0;for(const s of stops){const sc=nameScore(text,s);if(sc>score){score=sc;best=s}}return score>=18?best:null;}
 
 // ---------- Fahrplan-Scanner ----------
-function preprocessImage(file,maxSide=1800){return new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{URL.revokeObjectURL(url);let{width:w,height:h}=img;const scale=Math.min(1,maxSide/Math.max(w,h));w=Math.round(w*scale);h=Math.round(h*scale);const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,w,h);const imgData=ctx.getImageData(0,0,w,h);const d=imgData.data;for(let i=0;i<d.length;i+=4){let g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];g=(g-128)*1.6+128;g=g<0?0:g>255?255:g;d[i]=d[i+1]=d[i+2]=g}ctx.putImageData(imgData,0,0);resolve(canvas)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Bild konnte nicht geladen werden'))};img.src=url})}
+function resizeImage(file, maxSide){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      try {
+        URL.revokeObjectURL(url);
+        let { width:w, height:h } = img;
+        if(Math.max(w,h) <= maxSide){ resolve(file); return; }
+        const scale = maxSide / Math.max(w,h);
+        w = Math.round(w*scale);
+        h = Math.round(h*scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas);
+      } catch(e){ reject(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Bild nicht lesbar')); };
+    img.src = url;
+  });
+}
+
+function levenshtein(a, b){
+  if(!a.length) return b.length;
+  if(!b.length) return a.length;
+  const m = Array.from({length:b.length+1}, () => new Array(a.length+1).fill(0));
+  for(let j=0; j<=a.length; j++) m[0][j] = j;
+  for(let i=1; i<=b.length; i++){
+    m[i][0] = i;
+    for(let j=1; j<=a.length; j++){
+      m[i][j] = Math.min(m[i-1][j]+1, m[i][j-1]+1, m[i-1][j-1] + (b[i-1] === a[j-1] ? 0 : 1));
+    }
+  }
+  return m[b.length][a.length];
+}
 
 async function scanTimetable(file){
-  if(!window.Tesseract){ocrStatus.textContent='OCR-Bibliothek konnte nicht geladen werden. Bitte händisch eingeben.';ocrStatus.className='ocrstatus warn';return}
-  ocrStatus.textContent='📷 Foto wird vorbereitet …';ocrStatus.className='ocrstatus';
+  const rawBox = document.getElementById('ocrRaw');
+  if(rawBox){ rawBox.style.display = 'none'; rawBox.innerHTML = ''; }
+
+  if(!window.Tesseract){
+    ocrStatus.innerHTML = '⚠ OCR-Bibliothek nicht geladen. Internetverbindung prüfen und Seite neu laden.';
+    ocrStatus.className = 'ocrstatus warn';
+    return;
+  }
+
+  ocrStatus.innerHTML = '📷 Foto wird vorbereitet …';
+  ocrStatus.className = 'ocrstatus';
+
   try{
-    const canvas=await preprocessImage(file,1800);
-    ocrStatus.textContent='OCR liest das Foto …';
-    const {data}=await Tesseract.recognize(canvas,'deu+eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)ocrStatus.textContent=`OCR liest das Foto … ${Math.round(m.progress*100)} %`}});
-    const text=data.text||'';console.log('Ruf:Zu Fahrplan-OCR:',text);
-    const codes=extractOcrCodes(text);let from=findStopInText(text,codes[0]);let to=findStopInText(text,codes[1]);
-    if(!from||!to){const lines=text.split(/\r?\n/).map(norm).filter(Boolean);const lineHits=[];for(const line of lines){const hit=findStopInText(line);if(hit&&!lineHits.some(s=>stopCode(s)===stopCode(hit)))lineHits.push(hit)}if(!from&&lineHits[0])from=lineHits[0];if(!to&&lineHits[1])to=lineHits[1]}
-    if(!from||!to){const words=norm(text).split(/[^A-ZÄÖÜ0-9]+/).filter(w=>w.length>=4);const scored=[];for(const s of stops){const n=norm(s.name).replace(/^[A-Z]{2}\d{3}\s*-\s*/,'');const nameWords=n.split(/[^A-ZÄÖÜ0-9]+/).filter(w=>w.length>=4);let hitCount=0;for(const w of nameWords)if(words.includes(w))hitCount++;if(hitCount>=1)scored.push({stop:s,score:hitCount})}scored.sort((a,b)=>b.score-a.score);if(!from&&scored[0])from=scored[0].stop;if(!to&&scored[0]&&scored[1]&&stopCode(scored[1].stop)!==stopCode(from||{}))to=scored[1].stop}
-    let filled=0;if(from){selected.from=from;document.getElementById('from').value=from.name;document.getElementById('fromSug').hidden=true;filled++}if(to&&(!from||stopCode(to)!==stopCode(from))){selected.to=to;document.getElementById('to').value=to.name;document.getElementById('toSug').hidden=true;filled++}
-    const preview=esc(text.trim().slice(0,300))||'(leer)';
-    if(filled===2){ocrStatus.innerHTML=`✓ Erkannt: <b>${esc(from.name)}</b> → <b>${esc(to.name)}</b>. Berechnung startet …`;ocrStatus.className='ocrstatus good';setTimeout(()=>{try{calculateTrip()}catch(err){console.error(err)}},250)}
-    else if(filled===1){const got=from?.name||to?.name;ocrStatus.innerHTML=`✓ Ein Feld erkannt (<b>${esc(got)}</b>). Das andere bitte händisch auswählen.<br><small style="color:#8a5b00">Gelesen: ${preview}</small>`;ocrStatus.className='ocrstatus warn'}
-    else{ocrStatus.innerHTML=`Foto gelesen, aber Von/Nach nicht sicher erkannt. Bitte näher/schärfer fotografieren.<br><small style="color:#8a5b00">Gelesen: ${preview}</small>`;ocrStatus.className='ocrstatus warn'}
-  }catch(e){console.error(e);ocrStatus.textContent='OCR konnte das Foto nicht lesen. Bitte Felder händisch eingeben.';ocrStatus.className='ocrstatus warn'}
+    let source = file;
+    try{ source = await resizeImage(file, 1600); }
+    catch(e){ console.warn('Resize übersprungen:', e); }
+
+    ocrStatus.innerHTML = '⚙ OCR-Engine lädt (kann beim 1. Mal 10–30 Sek dauern) …';
+
+    const result = await Tesseract.recognize(source, 'deu', {
+      logger: m => {
+        if(m.status === 'loading tesseract core')            ocrStatus.innerHTML = '⚙ OCR-Engine lädt …';
+        else if(m.status === 'loading language traineddata') ocrStatus.innerHTML = '⚙ Sprachdaten laden …';
+        else if(m.status === 'initializing api')             ocrStatus.innerHTML = '⚙ OCR startet …';
+        else if(m.status === 'recognizing text')             ocrStatus.innerHTML = `🔍 Text wird erkannt … ${Math.round((m.progress||0)*100)} %`;
+      }
+    });
+
+    const text = (result.data && result.data.text || '').trim();
+    console.log('=== OCR-ROHTEXT ===');
+    console.log(text);
+
+    if(rawBox){
+      rawBox.style.display = 'block';
+      rawBox.innerHTML = `<b>OCR-Text (das hat Tesseract wirklich erkannt):</b>
+        <pre style="white-space:pre-wrap;font-family:monospace;font-size:11px;margin:6px 0 0;max-height:200px;overflow:auto;background:#f7f8f9;padding:8px;border-radius:8px">${esc(text)||'(leer)'}</pre>`;
+    }
+
+    if(!text){
+      ocrStatus.innerHTML = '⚠ Kein Text im Foto erkannt. Bitte näher rangehen, scharf stellen, gute Beleuchtung.';
+      ocrStatus.className = 'ocrstatus warn';
+      return;
+    }
+
+    const codes = extractOcrCodes(text);
+    let from = codes[0] ? findStopByCode(codes[0]) : null;
+    let to   = codes[1] ? findStopByCode(codes[1]) : null;
+
+    if(!from || !to){
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length >= 4);
+      const hits = [];
+      for(const line of lines){
+        const hit = findStopInText(line, null);
+        if(hit && !hits.some(h => stopCode(h) === stopCode(hit))) hits.push(hit);
+      }
+      if(!from && hits[0]) from = hits[0];
+      if(!to && hits[1]) to = hits[1];
+    }
+
+    if(!from || !to){
+      const upper = norm(text);
+      const words = upper.split(/[^A-ZÄÖÜ0-9]+/).filter(w => w.length >= 5);
+      const matches = [];
+      for(const s of stops){
+        const namePart = norm(s.name).replace(/^[A-Z]{2}\d{3}\s*-\s*/, '');
+        const nameWords = namePart.split(/[^A-ZÄÖÜ0-9]+/).filter(w => w.length >= 5);
+        let score = 0;
+        for(const nw of nameWords){
+          for(const w of words){
+            if(w === nw) score += 10;
+            else if(w.includes(nw) || nw.includes(w)) score += 5;
+            else if(levenshtein(w, nw) <= 2) score += 3;
+          }
+        }
+        if(score >= 8) matches.push({stop:s, score});
+      }
+      matches.sort((a,b) => b.score - a.score);
+      if(!from && matches[0]) from = matches[0].stop;
+      if(!to && matches[1] && stopCode(matches[1].stop) !== stopCode(from || {})) to = matches[1].stop;
+    }
+
+    let filled = 0;
+    if(from){ selected.from = from; document.getElementById('from').value = from.name; document.getElementById('fromSug').hidden = true; filled++; }
+    if(to && (!from || stopCode(to) !== stopCode(from))){ selected.to = to; document.getElementById('to').value = to.name; document.getElementById('toSug').hidden = true; filled++; }
+
+    if(filled === 2){
+      ocrStatus.innerHTML = `✓ Erkannt: <b>${esc(from.name)}</b> → <b>${esc(to.name)}</b>. Berechnung startet …`;
+      ocrStatus.className = 'ocrstatus good';
+      setTimeout(() => { try{ calculateTrip(); }catch(e){ console.error(e); } }, 300);
+    } else if(filled === 1){
+      const got = from?.name || to?.name;
+      ocrStatus.innerHTML = `✓ Eine Haltestelle erkannt: <b>${esc(got)}</b>. Die andere bitte händisch auswählen.`;
+      ocrStatus.className = 'ocrstatus warn';
+    } else {
+      ocrStatus.innerHTML = '⚠ Kein Haltestellenname erkannt. Siehe OCR-Text unten – bitte Von/Nach manuell eingeben oder näher fotografieren.';
+      ocrStatus.className = 'ocrstatus warn';
+    }
+  } catch(e){
+    console.error('OCR-Fehler:', e);
+    ocrStatus.innerHTML = '⚠ OCR-Fehler: ' + esc(e.message || 'Unbekannt');
+    ocrStatus.className = 'ocrstatus warn';
+  }
 }
 
 // ---------- Ticket-Scanner ----------
@@ -148,7 +268,7 @@ async function scanTicket(file){
     else if(stopCodes.length){html+=`<b>Erkannte Haltestellen:</b> ${stopCodes.map(esc).join(', ')}`;html+=`<br><span class="muted">Keine Zonennummer im Ticket gefunden – nur Haltestellencodes erkannt.</span>`}
     else{html+=`<b>Kein Ticketinhalt erkannt.</b><br><span class="muted">Bitte näher/schärfer fotografieren, damit Zonen oder Haltestellencodes gelesen werden können.</span>`;ticketResult.className='ticketresult show miss';ticketResult.innerHTML=html;ticketStatus.textContent='';return}
     if(cat)html+=`<br><b>Tarifart im Ticket:</b> ${esc(cat)}`;
-    if(zones.length&&selected.from&&selected.to){const trip=getRouteZoneSequence(selected.from,selected.to,null);const tripIds=trip.sequence||[];const overlap=zones.filter(z=>tripIds.includes(z));const uncovered=tripIds.filter(z=>!zones.includes(z));if(uncovered.length===0){html+=`<br><br><b style="color:#16865a">✓ Ticket deckt die aktuell gewählte Fahrt ab.</b>`;ticketResult.className='ticketresult show match'}else{html+=`<br><br><b style="color:#8a5b00">⚠ Ticket deckt ${uncovered.length} Zone${uncovered.length>1?'n':''} der gewählten Fahrt nicht ab:</b> `;html+=uncovered.map(z=>`<span class="zonetag">${esc(z)}</span>`).join(' ');ticketResult.className='ticketresult show miss'}}else if(zones.length){html+=`<br><br><span class="muted">Wähle zuerst Von und Nach, um das Ticket mit der Fahrt zu vergleichen.</span>`;ticketResult.className='ticketresult show'}
+    if(zones.length&&selected.from&&selected.to){const trip=getRouteZoneSequence(selected.from,selected.to,null);const tripIds=trip.sequence||[];const uncovered=tripIds.filter(z=>!zones.includes(z));if(uncovered.length===0){html+=`<br><br><b style="color:#16865a">✓ Ticket deckt die aktuell gewählte Fahrt ab.</b>`;ticketResult.className='ticketresult show match'}else{html+=`<br><br><b style="color:#8a5b00">⚠ Ticket deckt ${uncovered.length} Zone${uncovered.length>1?'n':''} der gewählten Fahrt nicht ab:</b> `;html+=uncovered.map(z=>`<span class="zonetag">${esc(z)}</span>`).join(' ');ticketResult.className='ticketresult show miss'}}else if(zones.length){html+=`<br><br><span class="muted">Wähle zuerst Von und Nach, um das Ticket mit der Fahrt zu vergleichen.</span>`;ticketResult.className='ticketresult show'}
     ticketResult.innerHTML=html;ticketStatus.textContent='✓ Ticket gelesen. Bitte prüfen.';ticketStatus.className='ocrstatus good';
   }catch(e){console.error(e);ticketStatus.textContent='Ticket konnte nicht gelesen werden. Bitte erneut versuchen.';ticketStatus.className='ocrstatus warn'}
 }
