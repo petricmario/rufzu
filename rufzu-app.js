@@ -7,7 +7,7 @@ let routeLine=null;
 
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function fmtEuro(v){return Number(v).toFixed(2).replace('.',',')+' €'}
-function getSelectedPair(){return selected.to?{from:FIXED_ORIGIN,to:selected.to}:null}
+function getSelectedPair(){return selected.from&&selected.to?{from:selected.from,to:selected.to}:null}
 
 const colorMap={'Maria Saal':'#f1d400','St.Veit':'#e59b00','Liebenfels':'#d64b27','Frauenstein':'#2877d1','St.Georgen am Längsee':'#18a566'};
 const map=L.map('map').setView([46.76,14.37],10);
@@ -39,11 +39,72 @@ function pick(id,i){
   map.setView([s.lat,s.lon],15);
 }
 function clearField(id){selected[id]=null;document.getElementById(id).value='';document.getElementById(id+'Sug').hidden=true;document.getElementById(id).focus()}
-function swapStops(){alert('Der Startpunkt ist für die Zonenkalkulation fest auf SV104 – St.Veit/Glan Bahnhof gesetzt.');}
+function swapStops(){if(!selected.from||!selected.to){alert('Bitte zuerst Von und Nach auswählen.');return}const a=selected.from,b=selected.to;selected.from=b;selected.to=a;document.getElementById('from').value=b.name;document.getElementById('to').value=a.name;map.setView([b.lat,b.lon],15);}
 
 document.addEventListener('click',e=>{if(!e.target.closest('.field')){const box=document.getElementById('toSug');if(box)box.hidden=true}});
+setupField('from');
 setupField('to');
+document.getElementById('clearFrom').addEventListener('click',()=>clearField('from'));
 document.getElementById('clearTo').addEventListener('click',()=>clearField('to'));
+document.getElementById('swapBtn')?.addEventListener('click',swapStops);
+
+
+function normalizeText(s){return String(s||'').toUpperCase().replace(/Ä/g,'AE').replace(/Ö/g,'OE').replace(/Ü/g,'UE').replace(/ß/g,'SS').replace(/[^A-Z0-9]/g,'');}
+function findStopFromOCR(text){
+ const upper=String(text||'').toUpperCase();
+ const codes=[...upper.matchAll(/\b([A-Z]{2}\s*\d{3})\b/g)].map(m=>m[1].replace(/\s+/g,''));
+ for(const code of codes){const hit=stops.find(s=>stopCode(s)===code);if(hit)return hit;}
+ const norm=normalizeText(upper);
+ let best=null,bestScore=0;
+ for(const st of stops){
+   const name=normalizeText(st.name.replace(/^[A-Z]{2}\d{3}\s*-?\s*/i,''));
+   if(name.length<5)continue;
+   const tokens=name.match(/[A-Z0-9]{4,}/g)||[];
+   const score=tokens.reduce((n,t)=>n+(norm.includes(t)?t.length:0),0);
+   if(score>bestScore){bestScore=score;best=st;}
+ }
+ return bestScore>=6?best:null;
+}
+function findTimes(text){return [...String(text||'').matchAll(/\b([01]?\d|2[0-3])\s*[:.]\s*([0-5]\d)\b/g)].map(m=>`${String(m[1]).padStart(2,'0')}:${m[2]}`);}
+function findPassengerNumbers(text){
+ const t=String(text||'');
+ const up=t.toUpperCase();
+ const nums=[...t.matchAll(/\b(\d{1,2})\b/g)].map(m=>Number(m[1])).filter(n=>n<=99);
+ let board=null,alight=null;
+ const bm=up.match(/(?:EINSTEIG|EINSTIEG|ZUSTIEG|ABHOL|↑)\D{0,8}(\d{1,2})/i); if(bm)board=Number(bm[1]);
+ const am=up.match(/(?:AUSSTEIG|AUSSTIEG|ABGANG|↓)\D{0,8}(\d{1,2})/i); if(am)alight=Number(am[1]);
+ if(board===null&&nums.length>=2)board=nums[0];
+ if(alight===null&&nums.length>=2)alight=nums[1];
+ return {board,alight};
+}
+async function scanScheduleImage(file){
+ const status=document.getElementById('ocrStatus');
+ status.className='ocrstatus';status.textContent='⏳ Foto wird gelesen …';
+ try{
+   if(!window.Tesseract)throw new Error('OCR-Modul konnte nicht geladen werden.');
+   const result=await Tesseract.recognize(file,'deu+eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)status.textContent=`⏳ Text wird erkannt … ${Math.round(m.progress*100)} %`;}});
+   const text=result?.data?.text||'';
+   const from=findStopFromOCR(text);
+   // Für die zweite Haltestelle versuchen wir zunächst Codes/Zeilen nach dem ersten Treffer.
+   const codes=[...text.toUpperCase().matchAll(/\b([A-Z]{2}\s*\d{3})\b/g)].map(m=>m[1].replace(/\s+/g,''));
+   const unique=[];for(const c of codes){if(!unique.includes(c))unique.push(c)}
+   let to=null;
+   if(unique.length>1)to=stops.find(st=>stopCode(st)===unique[1])||null;
+   if(!to){
+     const lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+     const candidates=lines.map(findStopFromOCR).filter(Boolean);
+     for(const c of candidates){if(!from||c.id!==from.id){to=c;break;}}
+   }
+   if(from)pick('from',stops.indexOf(from));
+   if(to)pick('to',stops.indexOf(to));
+   const times=findTimes(text);if(times[0]&&document.getElementById('departTime'))document.getElementById('departTime').value=times[0];if(times[1]&&document.getElementById('arriveTime'))document.getElementById('arriveTime').value=times[1];
+   const pc=findPassengerNumbers(text);if(pc.board!==null&&document.getElementById('boardCount'))document.getElementById('boardCount').value=pc.board;if(pc.alight!==null&&document.getElementById('alightCount'))document.getElementById('alightCount').value=pc.alight;
+   const found=[];if(from)found.push('Von');if(to)found.push('Nach');if(times.length)found.push('Zeiten');if(pc.board!==null||pc.alight!==null)found.push('Ein-/Ausstieg');
+   if(found.length){status.className='ocrstatus good';status.textContent='✓ Erkannt: '+found.join(', ')+'. Bitte kurz kontrollieren und danach berechnen.';}else{status.className='ocrstatus warn';status.textContent='Keine verwertbaren Fahrplandaten erkannt. Bitte manuell eingeben.';}
+ }catch(e){status.className='ocrstatus warn';status.textContent='Foto konnte nicht automatisch gelesen werden. Bitte Daten manuell eingeben.';}
+}
+document.getElementById('scanBtn')?.addEventListener('click',()=>document.getElementById('scanInput')?.click());
+document.getElementById('scanInput')?.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)scanScheduleImage(f);e.target.value='';});
 
 
 function hav(a,b){
@@ -87,14 +148,24 @@ async function calculateTrip(){
  if(!pair){alert('Bitte Von und Nach auswählen.');return}
  const a=pair.from,b=pair.to;
  document.getElementById('result').style.display='block';
- document.getElementById('routeText').innerHTML='<b>Von:</b> '+esc(FIXED_ORIGIN.name)+'<br><b>Nach:</b> '+esc(b.name);
- const nav=`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(a.lat+','+a.lon)}&destination=${encodeURIComponent(b.lat+','+b.lon)}&travelmode=driving`;
+ document.getElementById('routeText').innerHTML='<b>Von:</b> '+esc(a.name)+'<br><b>Nach:</b> '+esc(b.name);
+ const dt=document.getElementById('departTime')?.value,at=document.getElementById('arriveTime')?.value;
+ if(dt||at)document.getElementById('routeText').innerHTML+=`<br><b>Fahrt:</b> ${esc(dt||'–')} → ${esc(at||'–')}`;
+ const nav=`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(a.lat+','+a.lon)}&destination=${encodeURIComponent(b.lat+','+b.lon)}&travelmode=driving&dir_action=navigate`;
  document.getElementById('nav').href=nav;
  const key=stopCode(a)+'|'+stopCode(b);
  const verified=VERIFIED_ROUTES.get(key);
+ // Tarifanzeige ist bewusst unabhängig vom Straßenrouting.
+ if(verified){
+   renderZoneResult(verified.sequence,a,b,'verifizierte Tarifstrecke');
+ }else{
+   document.getElementById('zoneText').innerHTML='<b>Für diese Strecke noch nicht automatisch verifiziert</b>';
+   document.getElementById('zonePath').textContent='Kein Schätzwert aus Kilometern oder Luftlinie.';
+   document.getElementById('zoneMessage').innerHTML='<div class="warn">Die Tarifzonenzahl wird nicht vom Routingserver übernommen. Für diese konkrete Strecke ist in der verifizierten Zonenbasis noch kein Wert hinterlegt.</div>';
+   document.getElementById('fareBox').innerHTML='';
+ }
  document.getElementById('distanceText').textContent='Berechne …';
- document.getElementById('distanceNote').textContent='Straßenroute und Tarifzonen werden berechnet …';
- if(verified)renderZoneResult(verified.sequence,a,b,'verifizierter Kontrollfall');
+ document.getElementById('distanceNote').textContent='Straßenroute wird nur zur Orientierung ermittelt.';
  try{
    const route=await getRoute(a,b),km=route.distance/1000;
    document.getElementById('distanceText').textContent=km.toFixed(1).replace('.',',')+' km';
@@ -102,30 +173,9 @@ async function calculateTrip(){
    if(routeLine)map.removeLayer(routeLine);
    routeLine=L.geoJSON(route.geometry,{style:{weight:5,opacity:.8}}).addTo(map);
    map.fitBounds(routeLine.getBounds(),{padding:[20,20]});
-   if(!verified){
-     let seq=routeZoneSequence(route.geometry.coordinates);
-     const destZone=destinationZoneFor(b);
-     if(destZone && seq.at(-1)?.id!==destZone.id) seq.push(destZone);
-     if(!seq.length)throw new Error('Keine Tarifzone ermittelt');
-     const cached={zones:seq.length,sequence:seq.map(z=>z.id),updated:new Date().toISOString()};
-     zoneCache[key]=cached;try{localStorage.setItem(ZONE_CACHE_KEY,JSON.stringify(zoneCache))}catch(e){}
-     renderZoneResult(seq,a,b,'automatische Routenprüfung');
-   }else{
-     document.getElementById('zoneMessage').innerHTML='<div class="good">✓ Kontrollfall: SV104 → LF061 = 4 Zonen. Die Route wurde zusätzlich technisch geprüft.</div>';
-   }
  }catch(e){
-   if(!verified){
-     const cached=zoneCache[key];
-     if(cached?.sequence?.length)renderZoneResult(cached.sequence,a,b,'gespeicherte Routenprüfung');
-     else{
-       document.getElementById('zoneText').innerHTML='<b>Tarifzonen derzeit nicht berechenbar</b>';
-       document.getElementById('zonePath').textContent='Die Straßenroute konnte nicht ermittelt werden. Es wird bewusst keine Zone geraten.';
-       document.getElementById('zoneMessage').innerHTML='<div class="warn">Bitte Internetverbindung prüfen oder die offizielle Kärntner-Linien-Preisauskunft verwenden.</div>';
-       document.getElementById('fareBox').innerHTML='';
-     }
-   }
    document.getElementById('distanceText').textContent='nicht verfügbar';
-   document.getElementById('distanceNote').textContent='Straßenroute derzeit nicht erreichbar.';
+   document.getElementById('distanceNote').textContent='Straßenroute derzeit nicht erreichbar. Die Tarifzonenanzeige bleibt davon unabhängig.';
  }
 }
 document.getElementById('calcBtn').addEventListener('click',calculateTrip);
@@ -143,92 +193,9 @@ function openOfficial(){
  navigator.clipboard?.writeText(text).catch(()=>{});
  window.open(OFFICIAL_PRICE_URL,'_blank','noopener');
 }
-document.getElementById('copyBtn').addEventListener('click',copyTrip);
+document.getElementById('copyBtn')?.addEventListener('click',copyTrip);
 document.getElementById('officialBtn').addEventListener('click',openOfficial);
-
-selected.from=FIXED_ORIGIN;document.getElementById('from').value=FIXED_ORIGIN?.name||'';
 
 // Sicherheitsprüfungen beim Laden.
 if(stops.length!==536)console.error('Haltestellen-Datensatz beschädigt: erwartet 536, gefunden',stops.length);
-if(!stops.some(s=>s.name.startsWith('SV104 - ')))console.error('SV104 fehlt');
-if(!stops.some(s=>s.name.startsWith('LF061 - ')))console.error('LF061 fehlt');
-if(!FIXED_ORIGIN)console.error('FIXED_ORIGIN SV104 fehlt');
 if(TARIFF_ZONES.length<25)console.error('Tarifzonenbasis unvollständig');
-
-// --- Ticket-/KlimaTicket-Scanner ---
-(function initTicketScanner(){
-  const btn=document.getElementById('ticketScanBtn');
-  const modal=document.getElementById('ticketModal');
-  const readerEl=document.getElementById('ticketReader');
-  const status=document.getElementById('ticketStatus');
-  const data=document.getElementById('ticketData');
-  const close=document.getElementById('ticketClose');
-  const restart=document.getElementById('ticketRestart');
-  if(!btn||!modal||!readerEl)return;
-
-  let scanner=null;
-  let running=false;
-  let lastText='';
-
-  function setStatus(t,cls=''){
-    status.textContent=t;
-    status.className='ticketStatus'+(cls?' '+cls:'');
-  }
-  function showResult(text,format){
-    data.classList.remove('hidden');
-    data.innerHTML='<b>Code erkannt</b><br><span class="muted">Format: '+esc(format||'unbekannt')+'</span><div class="code" style="margin-top:8px">'+esc(text)+'</div><div class="warn" style="margin-top:10px">NICHT VERIFIZIERBAR – der Barcode wurde erfolgreich gelesen, aber die aktuelle Ticketgültigkeit kann von dieser App nicht offiziell bestätigt werden.</div>';
-  }
-  async function stop(){
-    if(scanner && running){
-      try{await scanner.stop()}catch(e){}
-    }
-    if(scanner){try{scanner.clear()}catch(e){}}
-    scanner=null;running=false;
-  }
-  async function start(){
-    await stop();
-    data.classList.add('hidden');
-    data.textContent='';
-    lastText='';
-    if(typeof Html5Qrcode==='undefined'){
-      setStatus('Scanner-Bibliothek konnte nicht geladen werden. Internetverbindung prüfen.','warn');
-      return;
-    }
-    try{
-      setStatus('Kamera wird gestartet …');
-      scanner=new Html5Qrcode('ticketReader');
-      const formats=[];
-      const F=window.Html5QrcodeSupportedFormats||{};
-      ['QR_CODE','AZTEC','DATA_MATRIX','CODE_128','CODE_39','CODE_93','CODABAR','EAN_13','EAN_8','ITF','PDF_417','UPC_A','UPC_E'].forEach(k=>{if(F[k]!==undefined)formats.push(F[k])});
-      const config={fps:10,qrbox:{width:280,height:190},aspectRatio:1.5,disableFlip:false};
-      if(formats.length)config.formatsToSupport=formats;
-      await scanner.start({facingMode:'environment'},config,(decodedText,decodedResult)=>{
-        if(!decodedText || decodedText===lastText)return;
-        lastText=decodedText;
-        const format=decodedResult?.result?.format?.formatName||decodedResult?.result?.format?.toString()||'Barcode';
-        setStatus('✓ Code erkannt. Kamera wird beendet …','good');
-        showResult(decodedText,format);
-        stop();
-      },()=>{});
-      running=true;
-      setStatus('Kamera aktiv – Barcode/QR-Code in den Rahmen halten.');
-    }catch(e){
-      running=false;
-      setStatus('Kamera konnte nicht gestartet werden. Bitte Kamerazugriff erlauben und die Seite über HTTPS öffnen.','warn');
-    }
-  }
-  async function show(){
-    modal.classList.add('open');
-    modal.setAttribute('aria-hidden','false');
-    await start();
-  }
-  async function hide(){
-    await stop();
-    modal.classList.remove('open');
-    modal.setAttribute('aria-hidden','true');
-  }
-  btn.addEventListener('click',show);
-  close.addEventListener('click',hide);
-  restart.addEventListener('click',start);
-  modal.addEventListener('click',e=>{if(e.target===modal)hide()});
-})();
