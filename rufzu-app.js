@@ -142,11 +142,14 @@ document.getElementById('calcBtn').addEventListener('click',calculateTrip);
 
 async function copyTrip(){const a=selected.from,b=selected.to;if(!a||!b){alert('Bitte zuerst Von und Nach auswählen.');return}const text=`Von: ${a.name}\nNach: ${b.name}`;try{await navigator.clipboard.writeText(text);alert('Von/Nach wurde kopiert.')}catch(e){prompt('Bitte diesen Text kopieren:',text)}}
 function openOfficial(){const a=selected.from,b=selected.to;const text=a&&b?`Von: ${a.name}\nNach: ${b.name}`:'';if(text)navigator.clipboard?.writeText(text).catch(()=>{});window.open(OFFICIAL_PRICE_URL,'_blank','noopener')}
-// OCR
+// OCR v5
 const scanBtn=document.getElementById('scanBtn'),scanInput=document.getElementById('scanInput'),ocrStatus=document.getElementById('ocrStatus');
-document.getElementById('manualBtn').addEventListener('click',()=>document.getElementById('from').focus());scanBtn.addEventListener('click',()=>scanInput.click());scanInput.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;await scanTimetable(file);scanInput.value=''})
+document.getElementById('manualBtn').addEventListener('click',()=>document.getElementById('from').focus());
+scanBtn.addEventListener('click',()=>scanInput.click());
+scanInput.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;await scanTimetable(file);scanInput.value=''})
+
 function norm(s){
-  return String(s||'').toUpperCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[–—−]/g,'-').replace(/\\s+/g,' ').trim()
+  return String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[–—−]/g,'-').replace(/\s+/g,' ').trim();
 }
 function compact(s){return norm(s).replace(/[^A-Z0-9]/g,'')}
 function levenshtein(a,b){
@@ -158,105 +161,120 @@ function levenshtein(a,b){
     for(let j=1;j<=b.length;j++)cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
     prev=cur;
   }
-  return prev[b.length]
+  return prev[b.length];
 }
-function codeDistance(a,b){return levenshtein(a,b)}
-const OCR_CODES=stops.map(s=>({code:stopCode(s),stop:s})).filter(x=>x.code);
+function stopNameForMatch(stop){return String(stop?.name||'').replace(/^[A-Z]{2}\d{3}\s*[-.:]?\s*/i,'').trim()}
+const OCR_STOPS=stops.map(stop=>({stop,code:stopCode(stop),name:stopNameForMatch(stop)})).filter(x=>x.code);
+
 function normalizeOcrCode(raw){
   let r=compact(raw);
   if(r.length!==5)return null;
-  // Typische Tesseract-Verwechslungen bei Haltestellencodes.
-  r=r[0]+r[1].replace(/[OQD]/g,'0').replace(/[IL]/g,'1').replace(/S/g,'5').replace(/B/g,'8')+r.slice(2).replace(/[OQD]/g,'0').replace(/[IL]/g,'1').replace(/S/g,'5').replace(/B/g,'8');
-  return r
+  const chars=r.split('');
+  // Nur die drei Ziffernpositionen werden korrigiert.
+  for(let i=2;i<5;i++)chars[i]=({O:'0',Q:'0',D:'0',I:'1',L:'1',S:'5',B:'8',Z:'2'}[chars[i]]||chars[i]);
+  r=chars.join('');
+  return /^[A-Z]{2}\d{3}$/.test(r)?r:null;
 }
 function resolveOcrCode(raw){
   const r=normalizeOcrCode(raw);if(!r)return null;
+  const exact=OCR_STOPS.find(x=>x.code===r);if(exact)return exact.stop;
   let best=null,bd=99;
-  for(const item of OCR_CODES){
-    const c=item.code;let d=codeDistance(r,c);
-    if(r.slice(0,2)===c.slice(0,2))d=Math.max(0,d-1);
+  for(const item of OCR_STOPS){
+    if(item.code.slice(0,2)!==r.slice(0,2))continue;
+    const d=levenshtein(r,item.code);
     if(d<bd){bd=d;best=item.stop}
   }
-  return bd<=1?best:null
+  return bd===1?best:null;
 }
 function tokenScore(a,b){
   const aa=norm(a).split(/[^A-Z0-9]+/).filter(w=>w.length>=3),bb=norm(b).split(/[^A-Z0-9]+/).filter(w=>w.length>=3);
   let score=0;
   for(const x of aa){
     let best=0;
-    for(const y of bb){const d=levenshtein(x,y),m=Math.max(x.length,y.length);const sim=1-d/m;if(sim>best)best=sim}
+    for(const y of bb){const d=levenshtein(x,y),m=Math.max(x.length,y.length);const sim=m?1-d/m:0;if(sim>best)best=sim}
     if(best>=0.72)score+=best*(x.length>=6?3:2);
   }
   return score;
 }
-function stopNameForMatch(stop){return String(stop.name||'').replace(/^[A-Z]{2}\d{3}\s*[-.:]?\s*/i,'')}
-function scoreStopAgainstText(text,stop){
-  const t=norm(text),tc=compact(t),code=stopCode(stop),cc=compact(code),name=stopNameForMatch(stop),nc=compact(name);
+function scoreStopAgainstText(text,item){
+  const t=norm(text),tc=compact(t),code=item.code,cc=compact(code),name=item.name,nc=compact(name);
   let score=0;
-  if(cc&&tc.includes(cc))score+=1000;
-  // Code with spaces/hyphen or one OCR character wrong.
-  const codeWindows=[];
-  for(let i=0;i<=Math.max(0,tc.length-5);i++)codeWindows.push(tc.slice(i,i+5));
-  if(cc&&codeWindows.length){const d=Math.min(...codeWindows.map(w=>levenshtein(w,cc)));if(d===1)score+=650;}
-  if(nc&&tc.includes(nc))score+=500;
+  if(cc&&tc.includes(cc))score+=2000;
+  if(cc){
+    const windows=[];
+    for(let i=0;i<=Math.max(0,tc.length-5);i++)windows.push(tc.slice(i,i+5));
+    if(windows.length){const d=Math.min(...windows.map(w=>levenshtein(w,cc)));if(d===1)score+=900;}
+  }
+  if(nc&&tc.includes(nc))score+=1200;
   const words=norm(name).split(/[^A-Z0-9]+/).filter(w=>w.length>=4);
-  for(const w of words){if(tc.includes(compact(w)))score+=Math.min(120,w.length*10)}
-  score+=tokenScore(t,name)*25;
+  for(const w of words){const cw=compact(w);if(cw&&tc.includes(cw))score+=Math.min(180,w.length*15)}
+  score+=tokenScore(t,name)*35;
   return score;
 }
 function extractOcrStops(text){
-  const t=norm(text),compactText=compact(t),found=[];
-  const raw=[...t.matchAll(/\\b[A-Z0-9]{2}\\s*[-.:]?\\s*[A-Z0-9]{3}\\b/g)].map(m=>m[0]);
-  for(const r of raw){const hit=resolveOcrCode(r);if(hit&&!found.some(s=>stopCode(s)===stopCode(hit)))found.push(hit)}
-  const scored=stops.map(stop=>({stop,score:scoreStopAgainstText(t,stop)})).filter(x=>x.score>=80).sort((a,b)=>b.score-a.score);
-  for(const x of scored){if(!found.some(s=>stopCode(s)===stopCode(x.stop)))found.push(x.stop);if(found.length>=2)break}
-  return found.slice(0,2)
+  const t=norm(text),hits=[];
+  // Codes zuerst und in der Reihenfolge ihres Auftretens im Foto.
+  const codeRe=/[A-Z]{2}\s*[-.:]?\s*[0-9OQDILSBZ]{3}/g;
+  for(const m of t.matchAll(codeRe)){
+    const hit=resolveOcrCode(m[0]);
+    if(hit&&!hits.some(x=>stopCode(x.stop)===stopCode(hit)))hits.push({stop:hit,pos:m.index??0,score:3000});
+  }
+  // Ganze OCR-Zeilen gegen alle Haltestellennamen prüfen.
+  const lines=t.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  for(const line of lines){
+    let best=null;
+    for(const item of OCR_STOPS){const score=scoreStopAgainstText(line,item);if(!best||score>best.score)best={stop:item.stop,score,pos:t.indexOf(line)}}
+    if(best&&best.score>=220&&!hits.some(x=>stopCode(x.stop)===stopCode(best.stop)))hits.push(best);
+  }
+  // Falls Tesseract alles in einen Block geschrieben hat.
+  if(hits.length<2){
+    for(const item of OCR_STOPS){
+      const score=scoreStopAgainstText(t,item);
+      if(score>=900&&!hits.some(x=>stopCode(x.stop)===item.code))hits.push({stop:item.stop,score,pos:t.indexOf(item.code)});
+    }
+  }
+  return hits.sort((a,b)=>(a.pos??0)-(b.pos??0)||b.score-a.score).slice(0,2).map(x=>x.stop);
 }
 function preprocessForOcr(file){
   return new Promise((resolve,reject)=>{
-    const img=new Image();img.onload=()=>{
-      const scale=Math.min(2.5,1800/Math.max(img.width,img.height));
-      const c=document.createElement('canvas');c.width=Math.round(img.width*scale);c.height=Math.round(img.height*scale);
+    const img=new Image();const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      const maxSide=Math.max(img.width,img.height),scale=Math.min(3,2600/Math.max(1,maxSide));
+      const c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));
       const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,c.width,c.height);
       const d=ctx.getImageData(0,0,c.width,c.height),p=d.data;
-      for(let i=0;i<p.length;i+=4){const g=0.299*p[i]+0.587*p[i+1]+0.114*p[i+2];const v=g>165?255:(g<105?0:g);p[i]=p[i+1]=p[i+2]=v}
-      ctx.putImageData(d,0,0);c.toBlob(b=>b?resolve(b):reject(new Error('Bildverarbeitung fehlgeschlagen')),'image/jpeg',0.92)
-    };img.onerror=reject;img.src=URL.createObjectURL(file)
-  })
+      for(let i=0;i<p.length;i+=4){const g=0.299*p[i]+0.587*p[i+1]+0.114*p[i+2];const v=g>172?255:(g<112?0:Math.round((g-112)*255/60));p[i]=p[i+1]=p[i+2]=v}
+      ctx.putImageData(d,0,0);c.toBlob(b=>b?resolve(b):reject(new Error('Bildverarbeitung fehlgeschlagen')),'image/jpeg',0.94);
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Bild konnte nicht geladen werden'))};img.src=url;
+  });
 }
 async function runOcr(file){
-  const texts=[];
-  for(const source of [file,await preprocessForOcr(file)]){
-    try{
-      const r=await Tesseract.recognize(source,'deu+eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)ocrStatus.textContent=`OCR liest das Foto … ${Math.round(m.progress*100)} %`}});
-      if(r?.data?.text)texts.push(r.data.text)
-    }catch(e){console.warn('OCR-Durchlauf fehlgeschlagen',e)}
-  }
-  return texts.join('\n')
+  const worker=await Tesseract.createWorker('deu+eng',1,{logger:m=>{if(m.status==='recognizing text'&&m.progress)ocrStatus.textContent='OCR liest das Foto … '+Math.round(m.progress*100)+' %'}});
+  try{
+    await worker.setParameters({tessedit_pageseg_mode:Tesseract.PSM.SPARSE_TEXT,preserve_interword_spaces:'1',user_defined_dpi:'300'});
+    const sources=[file,await preprocessForOcr(file)],texts=[];
+    for(const source of sources){try{const r=await worker.recognize(source,{rotateAuto:true});if(r?.data?.text)texts.push(r.data.text)}catch(e){console.warn('OCR-Durchlauf fehlgeschlagen',e)}}
+    return texts.join('\n');
+  }finally{await worker.terminate()}
 }
 async function scanTimetable(file){
   if(!window.Tesseract){ocrStatus.textContent='OCR-Bibliothek konnte nicht geladen werden. Bitte händisch eingeben.';ocrStatus.className='ocrstatus warn';return}
   ocrStatus.textContent='📷 Foto wird gelesen …';ocrStatus.className='ocrstatus';
   try{
     const text=await runOcr(file);console.log('Ruf:Zu OCR-Text:',text);
-    const lines=text.split(/\r?\n/).map(norm).filter(Boolean);
-    let hits=extractOcrStops(text);
-    // Zusätzlich jede einzelne Zeile gegen alle 536 Haltestellennamen prüfen.
-    const lineHits=[];
-    for(const line of lines){
-      let best=null,bs=0;
-      for(const s of stops){const sc=scoreStopAgainstText(line,s);if(sc>bs){bs=sc;best=s}}
-      if(best&&bs>=80&&!lineHits.some(s=>stopCode(s)===stopCode(best)))lineHits.push(best);
-    }
-    for(const h of lineHits){if(!hits.some(s=>stopCode(s)===stopCode(h)))hits.push(h);if(hits.length>=2)break}
-    const from=hits[0]||null,to=hits.find(s=>!from||stopCode(s)!==stopCode(from))||null;
-    let filled=0;
+    const hits=extractOcrStops(text),from=hits[0]||null,to=hits[1]||null;let filled=0;
     if(from){selected.from=from;document.getElementById('from').value=from.name;document.getElementById('fromSug').hidden=true;filled++}
     if(to){selected.to=to;document.getElementById('to').value=to.name;document.getElementById('toSug').hidden=true;filled++}
-    if(filled===2){ocrStatus.textContent=`✓ Erkannt: ${from.name} → ${to.name}. Bitte kontrollieren und danach berechnen.`;ocrStatus.className='ocrstatus good'}
-    else if(filled===1){ocrStatus.textContent=`✓ ${from?.name||to?.name} erkannt. Das zweite Feld bitte kurz händisch auswählen.`;ocrStatus.className='ocrstatus warn'}
-    else{ocrStatus.textContent='Foto wurde gelesen, aber keine passende Haltestelle erkannt. Bitte Fahrplan vollständig und möglichst gerade fotografieren.';ocrStatus.className='ocrstatus warn'}
-  }catch(e){console.error(e);ocrStatus.textContent='OCR konnte das Foto nicht lesen. Bitte Felder händisch eingeben.';ocrStatus.className='ocrstatus warn'}
+    if(filled===2){ocrStatus.textContent='✓ Erkannt: '+from.name+' → '+to.name+'. Bitte kontrollieren und danach berechnen.';ocrStatus.className='ocrstatus good'}
+    else if(filled===1){ocrStatus.textContent='✓ '+from.name+' erkannt. Das zweite Feld bitte kurz händisch auswählen.';ocrStatus.className='ocrstatus warn'}
+    else{
+      const preview=norm(text).replace(/\s+/g,' ').slice(0,220);
+      ocrStatus.textContent=preview?'OCR hat Text gelesen, aber keine der 536 Haltestellen sicher erkannt. Erkannter Text: '+preview:'Foto wurde gelesen, aber es wurde kein verwertbarer Text erkannt. Bitte Fahrplan vollständig und möglichst gerade fotografieren.';
+      ocrStatus.className='ocrstatus warn';
+    }
+  }catch(e){console.error('Ruf:Zu OCR-Fehler',e);ocrStatus.textContent='OCR konnte das Foto nicht lesen. Bitte Felder händisch eingeben.';ocrStatus.className='ocrstatus warn'}
 }
 document.getElementById('officialBtn').addEventListener('click',openOfficial);
 
