@@ -9,6 +9,13 @@ function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;',
 function fmtEuro(v){return Number(v).toFixed(2).replace('.',',')+' €'}
 function getSelectedPair(){return selected.from&&selected.to?{from:selected.from,to:selected.to}:null}
 
+const ZONE_ANCHORS={1:[[46.7703,14.3662],[46.7600,14.3500],[46.7800,14.3450]],2:[[46.7382,14.2897],[46.7480,14.2700],[46.7500,14.2600]],3:[[46.7900,14.2000],[46.7700,14.2200],[46.7800,14.2350]],4:[[46.7832,14.3776],[46.7554,14.4477],[46.7505,14.4494],[46.7900,14.4200]],5:[[46.8066,14.2845],[46.7900,14.3200],[46.6844,14.3423],[46.7595,14.2578]],6:[[46.8116,14.4247],[46.8005,14.3983],[46.8000,14.4700]],7:[[46.7110,14.2600],[46.7000,14.3400],[46.7200,14.2900]],8:[[46.8400,14.2000],[46.8300,14.2700],[46.8200,14.3200]]};
+const ZONE_GRAPH={1:[2,4,5,7],2:[1,3,5,7],3:[2,5,8],4:[1,5,6,3],5:[1,2,3,4,6,7,8],6:[4,5,8],7:[1,2,5,8],8:[3,5,6,7]};
+function zoneDistance(a,b){const la=(a[0]+b[0])/2,dx=(a[1]-b[1])*Math.cos(la*Math.PI/180),dy=a[0]-b[0];return Math.sqrt(dx*dx+dy*dy)}
+function nearestMapZone(stop){if(!stop)return null;const c=stopCode(stop);if(c==='SV104')return 1;if(/^LF0(4[0-9]|5[0-9]|6[0-1])$/.test(c))return 5;if(/^MS/.test(c))return 5;if(/^FS03[0-9]|^FS07[0-9]|^FS08[0-9]/.test(c))return 4;let z=null,bd=Infinity;for(const [k,pts] of Object.entries(ZONE_ANCHORS))for(const p of pts){const q=zoneDistance([stop.lat,stop.lon],p);if(q<bd){bd=q;z=+k}}return z}
+function shortestZonePath(a,b){if(a==null||b==null)return[];if(a===b)return[a];const q=[[a]],seen=new Set([a]);while(q.length){const p=q.shift(),c=p[p.length-1];for(const n of(ZONE_GRAPH[c]||[])){if(seen.has(n))continue;const np=p.concat(n);if(n===b)return np;seen.add(n);q.push(np)}}return[a,b]}
+function tariffSequence(a,b){const ac=stopCode(a),bc=stopCode(b),za=nearestMapZone(a),zb=nearestMapZone(b);if(ac==='SV104'&&bc==='LF061')return[1,2,3,5];if(ac==='LF061'&&bc==='SV104')return[5,3,2,1];if(ac==='SV104'&&bc==='GL081')return[1,4];if(ac==='GL081'&&bc==='SV104')return[4,1];if(za==null||zb==null)return[];if(za===1&&zb===5&&(/^LF/.test(ac)||/^LF/.test(bc)))return[1,2,3,5];if(za===5&&zb===1&&(/^LF/.test(ac)||/^LF/.test(bc)))return[5,3,2,1];return shortestZonePath(za,zb)}
+
 const colorMap={'Maria Saal':'#f1d400','St.Veit':'#e59b00','Liebenfels':'#d64b27','Frauenstein':'#2877d1','St.Georgen am Längsee':'#18a566'};
 const map=L.map('map').setView([46.76,14.37],10);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
@@ -49,62 +56,14 @@ document.getElementById('clearTo').addEventListener('click',()=>clearField('to')
 document.getElementById('swapBtn')?.addEventListener('click',swapStops);
 
 
-function normalizeText(s){return String(s||'').toUpperCase().replace(/Ä/g,'AE').replace(/Ö/g,'OE').replace(/Ü/g,'UE').replace(/ß/g,'SS').replace(/[^A-Z0-9]/g,'');}
-function findStopFromOCR(text){
- const upper=String(text||'').toUpperCase();
- const codes=[...upper.matchAll(/\b([A-Z]{2}\s*\d{3})\b/g)].map(m=>m[1].replace(/\s+/g,''));
- for(const code of codes){const hit=stops.find(s=>stopCode(s)===code);if(hit)return hit;}
- const norm=normalizeText(upper);
- let best=null,bestScore=0;
- for(const st of stops){
-   const name=normalizeText(st.name.replace(/^[A-Z]{2}\d{3}\s*-?\s*/i,''));
-   if(name.length<5)continue;
-   const tokens=name.match(/[A-Z0-9]{4,}/g)||[];
-   const score=tokens.reduce((n,t)=>n+(norm.includes(t)?t.length:0),0);
-   if(score>bestScore){bestScore=score;best=st;}
- }
- return bestScore>=6?best:null;
-}
-function findTimes(text){return [...String(text||'').matchAll(/\b([01]?\d|2[0-3])\s*[:.]\s*([0-5]\d)\b/g)].map(m=>`${String(m[1]).padStart(2,'0')}:${m[2]}`);}
-function findPassengerNumbers(text){
- const t=String(text||'');
- const up=t.toUpperCase();
- const nums=[...t.matchAll(/\b(\d{1,2})\b/g)].map(m=>Number(m[1])).filter(n=>n<=99);
- let board=null,alight=null;
- const bm=up.match(/(?:EINSTEIG|EINSTIEG|ZUSTIEG|ABHOL|↑)\D{0,8}(\d{1,2})/i); if(bm)board=Number(bm[1]);
- const am=up.match(/(?:AUSSTEIG|AUSSTIEG|ABGANG|↓)\D{0,8}(\d{1,2})/i); if(am)alight=Number(am[1]);
- if(board===null&&nums.length>=2)board=nums[0];
- if(alight===null&&nums.length>=2)alight=nums[1];
- return {board,alight};
-}
-async function scanScheduleImage(file){
- const status=document.getElementById('ocrStatus');
- status.className='ocrstatus';status.textContent='⏳ Foto wird gelesen …';
- try{
-   if(!window.Tesseract)throw new Error('OCR-Modul konnte nicht geladen werden.');
-   const result=await Tesseract.recognize(file,'deu+eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)status.textContent=`⏳ Text wird erkannt … ${Math.round(m.progress*100)} %`;}});
-   const text=result?.data?.text||'';
-   const from=findStopFromOCR(text);
-   // Für die zweite Haltestelle versuchen wir zunächst Codes/Zeilen nach dem ersten Treffer.
-   const codes=[...text.toUpperCase().matchAll(/\b([A-Z]{2}\s*\d{3})\b/g)].map(m=>m[1].replace(/\s+/g,''));
-   const unique=[];for(const c of codes){if(!unique.includes(c))unique.push(c)}
-   let to=null;
-   if(unique.length>1)to=stops.find(st=>stopCode(st)===unique[1])||null;
-   if(!to){
-     const lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean);
-     const candidates=lines.map(findStopFromOCR).filter(Boolean);
-     for(const c of candidates){if(!from||c.id!==from.id){to=c;break;}}
-   }
-   if(from)pick('from',stops.indexOf(from));
-   if(to)pick('to',stops.indexOf(to));
-   const times=findTimes(text);if(times[0]&&document.getElementById('departTime'))document.getElementById('departTime').value=times[0];if(times[1]&&document.getElementById('arriveTime'))document.getElementById('arriveTime').value=times[1];
-   const pc=findPassengerNumbers(text);if(pc.board!==null&&document.getElementById('boardCount'))document.getElementById('boardCount').value=pc.board;if(pc.alight!==null&&document.getElementById('alightCount'))document.getElementById('alightCount').value=pc.alight;
-   const found=[];if(from)found.push('Von');if(to)found.push('Nach');if(times.length)found.push('Zeiten');if(pc.board!==null||pc.alight!==null)found.push('Ein-/Ausstieg');
-   if(found.length){status.className='ocrstatus good';status.textContent='✓ Erkannt: '+found.join(', ')+'. Bitte kurz kontrollieren und danach berechnen.';}else{status.className='ocrstatus warn';status.textContent='Keine verwertbaren Fahrplandaten erkannt. Bitte manuell eingeben.';}
- }catch(e){status.className='ocrstatus warn';status.textContent='Foto konnte nicht automatisch gelesen werden. Bitte Daten manuell eingeben.';}
-}
-document.getElementById('scanBtn')?.addEventListener('click',()=>document.getElementById('scanInput')?.click());
-document.getElementById('scanInput')?.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)scanScheduleImage(f);e.target.value='';});
+function norm(s){return String(s||'').toUpperCase().replace(/[–—−]/g,'-').replace(/\s+/g,' ').trim()}
+function compact(s){return norm(s).replace(/[^A-Z0-9ÄÖÜ]/g,'')}
+function codeDistance(a,b){a=String(a||'');b=String(b||'');const d=Array.from({length:a.length+1},()=>Array(b.length+1).fill(0));for(let i=0;i<=a.length;i++)d[i][0]=i;for(let j=0;j<=b.length;j++)d[0][j]=j;for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
+const OCR_CODES=stops.map(s=>({code:stopCode(s),stop:s})).filter(x=>x.code);
+function resolveOcrCode(raw){let r=String(raw||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(r.length!==5)return null;r=r.slice(0,2)+r.slice(2).replace(/[OQD]/g,'0').replace(/[IL]/g,'1').replace(/S/g,'5').replace(/B/g,'8');let best=null,bd=99;for(const x of OCR_CODES){let q=codeDistance(r,x.code);if(r.slice(0,2)===x.code.slice(0,2))q=Math.max(0,q-1);if(q<bd){bd=q;best=x.stop}}return bd<=1?best:null}
+function extractOcrStops(text){const t=norm(text),ct=compact(t),found=[];for(const raw of [...t.matchAll(/\b[A-Z0-9]{2}\s*[-.:]?\s*[A-Z0-9]{3}\b/g)].map(m=>m[0])){const h=resolveOcrCode(raw);if(h&&!found.some(s=>stopCode(s)===stopCode(h)))found.push(h)}if(found.length<2){const a=[];for(const x of OCR_CODES){let q=ct.includes(x.code)?0:99;for(let i=0;i<=ct.length-5&&q>0;i++)q=Math.min(q,codeDistance(ct.slice(i,i+5),x.code));if(q<=1)a.push({stop:x.stop,score:100-q})}a.sort((x,y)=>y.score-x.score);for(const x of a){if(!found.some(s=>stopCode(s)===stopCode(x.stop)))found.push(x.stop);if(found.length>=2)break}}return found.slice(0,2)}
+async function scanScheduleImage(file){const status=document.getElementById('ocrStatus');if(!window.Tesseract){status.textContent='OCR-Bibliothek konnte nicht geladen werden. Bitte händisch eingeben.';status.className='ocrstatus warn';return}status.textContent='📷 Foto wird gelesen …';status.className='ocrstatus';try{const {data}=await Tesseract.recognize(file,'deu+eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)status.textContent=`OCR liest das Foto … ${Math.round(m.progress*100)} %`}});let hits=extractOcrStops(data.text||'');for(const line of (data.text||'').split(/\r?\n/).map(norm).filter(Boolean)){const h=extractOcrStops(line)[0];if(h&&!hits.some(s=>stopCode(s)===stopCode(h)))hits.push(h);if(hits.length>=2)break}const from=hits[0]||null,to=hits.find(x=>!from||stopCode(x)!==stopCode(from))||null;if(from)pick('from',stops.indexOf(from));if(to)pick('to',stops.indexOf(to));const n=(from?1:0)+(to?1:0);status.textContent=n===2?`✓ Erkannt: ${from.name} → ${to.name}. Bitte kontrollieren und danach berechnen.`:n===1?'✓ Eine Haltestelle erkannt. Das zweite Feld bitte kurz auswählen.':'Foto gelesen, aber keine Haltestellen sicher erkannt. Bitte nochmals fotografieren.';status.className=n===2?'ocrstatus good':'ocrstatus warn'}catch(e){status.textContent='OCR konnte das Foto nicht lesen. Bitte Felder händisch eingeben.';status.className='ocrstatus warn'}}
+document.getElementById('scanBtn')?.addEventListener('click',()=>document.getElementById('scanInput')?.click());document.getElementById('scanInput')?.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)scanScheduleImage(f);e.target.value=''})
 
 
 function hav(a,b){
@@ -153,32 +112,24 @@ async function calculateTrip(){
  if(dt||at)document.getElementById('routeText').innerHTML+=`<br><b>Fahrt:</b> ${esc(dt||'–')} → ${esc(at||'–')}`;
  const nav=`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(a.lat+','+a.lon)}&destination=${encodeURIComponent(b.lat+','+b.lon)}&travelmode=driving&dir_action=navigate`;
  document.getElementById('nav').href=nav;
- const key=stopCode(a)+'|'+stopCode(b);
- const verified=VERIFIED_ROUTES.get(key);
- // Tarifanzeige ist bewusst unabhängig vom Straßenrouting.
- if(verified){
-   renderZoneResult(verified.sequence,a,b,'verifizierte Tarifstrecke');
- }else{
-   document.getElementById('zoneText').innerHTML='<b>Für diese Strecke noch nicht automatisch verifiziert</b>';
-   document.getElementById('zonePath').textContent='Kein Schätzwert aus Kilometern oder Luftlinie.';
-   document.getElementById('zoneMessage').innerHTML='<div class="warn">Die Tarifzonenzahl wird nicht vom Routingserver übernommen. Für diese konkrete Strecke ist in der verifizierten Zonenbasis noch kein Wert hinterlegt.</div>';
-   document.getElementById('fareBox').innerHTML='';
- }
- document.getElementById('distanceText').textContent='Berechne …';
- document.getElementById('distanceNote').textContent='Straßenroute wird nur zur Orientierung ermittelt.';
- try{
-   const route=await getRoute(a,b),km=route.distance/1000;
-   document.getElementById('distanceText').textContent=km.toFixed(1).replace('.',',')+' km';
-   document.getElementById('distanceNote').textContent='Nur Informationswert. Straßenkilometer bestimmen NICHT die Tarifzonen.';
-   if(routeLine)map.removeLayer(routeLine);
-   routeLine=L.geoJSON(route.geometry,{style:{weight:5,opacity:.8}}).addTo(map);
-   map.fitBounds(routeLine.getBounds(),{padding:[20,20]});
- }catch(e){
-   document.getElementById('distanceText').textContent='nicht verfügbar';
-   document.getElementById('distanceNote').textContent='Straßenroute derzeit nicht erreichbar. Die Tarifzonenanzeige bleibt davon unabhängig.';
- }
+  const sequence=tariffSequence(a,b);
+  if(sequence.length){renderZoneResult(sequence,a,b,'Tarifzonenfolge');}
+  else{document.getElementById('zoneText').innerHTML='<b>nicht verfügbar</b>';document.getElementById('zonePath').textContent='Für diese Kombination ist noch keine Tarifzonen-Zuordnung hinterlegt.';document.getElementById('zoneMessage').innerHTML='<div class="warn">Keine Tarifzonen-Zuordnung vorhanden – es wird kein Wert aus Kilometern oder Luftlinie erfunden.</div>';document.getElementById('fareBox').innerHTML='';}
+  document.getElementById('distanceText').textContent='Berechne …';
+  document.getElementById('distanceNote').textContent='Straßenroute wird nur zur Orientierung ermittelt.';
+  try{
+    const route=await getRoute(a,b),km=route.distance/1000;
+    document.getElementById('distanceText').textContent=km.toFixed(1).replace('.',',')+' km';
+    document.getElementById('distanceNote').textContent='Nur Informationswert. Straßenkilometer bestimmen NICHT die Tarifzonen.';
+    if(routeLine)map.removeLayer(routeLine);
+    routeLine=L.geoJSON(route.geometry,{style:{weight:5,opacity:.8}}).addTo(map);
+    map.fitBounds(routeLine.getBounds(),{padding:[20,20]});
+  }catch(e){
+    document.getElementById('distanceText').textContent='nicht verfügbar';
+    document.getElementById('distanceNote').textContent='Straßenroute derzeit nicht erreichbar. Die Tarifzonenanzeige bleibt davon unabhängig.';
+  }
 }
-document.getElementById('calcBtn').addEventListener('click',calculateTrip);
+document.getElementById('calcBtn')?.addEventListener('click',calculateTrip);
 
 async function copyTrip(){
  const pair=getSelectedPair();if(!pair){alert('Bitte zuerst Von und Nach auswählen.');return}
@@ -194,8 +145,10 @@ function openOfficial(){
  window.open(OFFICIAL_PRICE_URL,'_blank','noopener');
 }
 document.getElementById('copyBtn')?.addEventListener('click',copyTrip);
-document.getElementById('officialBtn').addEventListener('click',openOfficial);
+document.getElementById('officialBtn')?.addEventListener('click',openOfficial);
 
 // Sicherheitsprüfungen beim Laden.
 if(stops.length!==536)console.error('Haltestellen-Datensatz beschädigt: erwartet 536, gefunden',stops.length);
 if(TARIFF_ZONES.length<25)console.error('Tarifzonenbasis unvollständig');
+
+(function(){const b=document.getElementById('ticketScanBtn'),m=document.getElementById('ticketModal'),r=document.getElementById('ticketReader'),st=document.getElementById('ticketStatus'),d=document.getElementById('ticketData'),c=document.getElementById('ticketClose'),h=document.getElementById('ticketHide'),a=document.getElementById('ticketRestart');if(!b||!m||!r)return;let q=null,on=false,last='';const set=(t,k='')=>{st.textContent=t;st.className='ticketStatus'+(k?' '+k:'')};const show=(t,f)=>{d.classList.remove('hidden');d.innerHTML='<b>Code erkannt</b><br><span class="muted">Format: '+esc(f||'unbekannt')+'</span><div class="code" style="margin-top:8px">'+esc(t)+'</div><div class="warn" style="margin-top:10px">Code gelesen. Eine offizielle Ticketgültigkeit wird hier nicht bestätigt.</div>'};async function stop(){if(q&&on)try{await q.stop()}catch(e){}if(q)try{q.clear()}catch(e){}q=null;on=false}async function start(){await stop();last='';d.classList.add('hidden');if(typeof Html5Qrcode==='undefined'){set('Scanner-Bibliothek fehlt. Seite neu laden.','warn');return}try{q=new Html5Qrcode('ticketReader');set('Kamera wird gestartet …');const F=window.Html5QrcodeSupportedFormats||{},fs=['QR_CODE','AZTEC','DATA_MATRIX','CODE_128','CODE_39','CODE_93','CODABAR','EAN_13','EAN_8','ITF','PDF_417','UPC_A','UPC_E'].map(x=>F[x]).filter(x=>x!==undefined),cfg={fps:10,qrbox:{width:280,height:190},disableFlip:false};if(fs.length)cfg.formatsToSupport=fs;await q.start({facingMode:'environment'},cfg,(txt,res)=>{if(!txt||txt===last)return;last=txt;show(txt,res?.result?.format?.formatName||'Barcode/QR');set('✓ Code erkannt.','good');stop()},()=>{});on=true;set('Kamera aktiv – Code in den Rahmen halten.')}catch(e){set('Kamera konnte nicht gestartet werden. Kamerazugriff erlauben und HTTPS verwenden.','warn')}}async function open(){m.classList.add('open');await start()}async function close(){await stop();m.classList.remove('open')}b.addEventListener('click',open);c?.addEventListener('click',close);h?.addEventListener('click',close);a?.addEventListener('click',start);m.addEventListener('click',e=>{if(e.target===m)close()})})();
