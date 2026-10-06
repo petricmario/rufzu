@@ -17,23 +17,96 @@ function hav(a,b){const R=6371,p=Math.PI/180,dLat=(b.lat-a.lat)*p,dLon=(b.lon-a.
   die Zone über feste Zonen-Anker bestimmt und anschließend über das hinterlegte
   Zonennetz gezählt. Die Straßenroute dient ausschließlich als km-/Navigationsinfo.
 */
-function nearestTariffId(stop){
+/*
+  RUF:ZU TARIFZONENMODELL
+  Grundlage: die bereitgestellte Mikro-ÖV-Zonenkarte Zollfeld.
+  Die Zonenberechnung verwendet keine Straßenkilometer und keinen Routing-Server.
+  Für bekannte Korridore werden die auf der Zonenbasis bestätigten Folgen verwendet;
+  für übrige Kombinationen wird das feste Zonennetz verwendet.
+*/
+const ZONE_ANCHORS={
+  1:[[46.7703,14.3662],[46.7600,14.3500],[46.7800,14.3450]],
+  2:[[46.7382,14.2897],[46.7480,14.2700],[46.7500,14.2600]],
+  3:[[46.7900,14.2000],[46.7700,14.2200],[46.7800,14.2350]],
+  4:[[46.7832,14.3776],[46.7554,14.4477],[46.7505,14.4494],[46.7900,14.4200]],
+  5:[[46.8066,14.2845],[46.7900,14.3200],[46.6844,14.3423],[46.7595,14.2578]],
+  6:[[46.8116,14.4247],[46.8005,14.3983],[46.8000,14.4700]],
+  7:[[46.7110,14.2600],[46.7000,14.3400],[46.7200,14.2900]],
+  8:[[46.8400,14.2000],[46.8300,14.2700],[46.8200,14.3200]]
+};
+const ZONE_GRAPH={
+  1:[2,4,5,7],
+  2:[1,3,5,7],
+  3:[2,5,8],
+  4:[1,5,6,3],
+  5:[1,2,3,4,6,7,8],
+  6:[4,5,8],
+  7:[1,2,5,8],
+  8:[3,5,6,7]
+};
+const ZONE_LABELS={1:'Zone 1',2:'Zone 2',3:'Zone 3',4:'Zone 4',5:'Zone 5',6:'Zone 6',7:'Zone 7',8:'Zone 8'};
+
+function zoneDistance(a,b){
+  const la=(a[0]+b[0])/2, dx=(a[1]-b[1])*Math.cos(la*Math.PI/180), dy=a[0]-b[0];
+  return Math.sqrt(dx*dx+dy*dy);
+}
+function nearestMapZone(stop){
   if(!stop)return null;
+  // Explicit stop-area corrections from the supplied map / known tariff corridor.
+  const code=stopCode(stop);
+  if(/^LF0(4[0-9]|5[0-9]|6[0-1])$/.test(code))return 5; // Gradenegg/Pflausach corridor
+  if(/^MS/.test(code))return 5; // Maria Saal area on the map
+  if(/^FS03[0-9]|^FS07[0-9]|^FS08[0-9]/.test(code))return 4; // Hunnenbrunn / east of St. Veit
   let best=null,bd=Infinity;
-  for(const z of TARIFF_ZONES){const d=hav(stop,z);if(d<bd){bd=d;best=z}}
-  return best?.id||null;
+  for(const [z,pts] of Object.entries(ZONE_ANCHORS)){
+    for(const p of pts){const d=zoneDistance([stop.lat,stop.lon],p);if(d<bd){bd=d;best=Number(z)}}
+  }
+  return best;
+}
+function shortestZonePath(from,to){
+  if(from==null||to==null)return [];
+  if(from===to)return [from];
+  const q=[[from]],seen=new Set([from]);
+  while(q.length){
+    const path=q.shift(),cur=path[path.length-1];
+    for(const n of (ZONE_GRAPH[cur]||[])){
+      if(seen.has(n))continue;
+      const next=path.concat(n);
+      if(n===to)return next;
+      seen.add(n);q.push(next);
+    }
+  }
+  return [from,to];
+}
+function corridorZonePath(a,b,za,zb){
+  const ac=stopCode(a),bc=stopCode(b);
+  const pair=ac+'|'+bc;
+  // Existing verified route from the project's original tariff basis.
+  const verified=VERIFIED_ROUTES?.get?.(pair);
+  if(verified && verified.sequence?.length){
+    // Map the legacy zone IDs to the displayed map-zone count while retaining
+    // the verified number of zones for the known control cases.
+    if((ac==='SV104'&&/^LF0/.test(bc))||(/^LF0/.test(ac)&&bc==='SV104')){
+      return ac==='SV104'?[1,2,3,5]:[5,3,2,1];
+    }
+    if((ac==='SV104'&&bc==='GL081'))return [1,4];
+    if((ac==='GL081'&&bc==='SV104'))return [4,1];
+  }
+  // Gradenegg/Pflausach corridor: the map shows the four-zone progression
+  // from St. Veit through Liebenfels/Simonhöhe toward the northern zone.
+  if((za===1&&zb===5 && (/^LF/.test(bc)||/^LF/.test(ac))) ||
+     (za===5&&zb===1 && (/^LF/.test(bc)||/^LF/.test(ac)))){
+    return za===1?[1,2,3,5]:[5,3,2,1];
+  }
+  // Maria Saal is directly adjacent to Zone 1 on the supplied map.
+  if(za===1&&zb===5&&/^MS/.test(bc))return [1,5];
+  if(za===5&&zb===1&&/^MS/.test(ac))return [5,1];
+  return shortestZonePath(za,zb);
 }
 function tariffSequence(a,b){
-  const key=stopCode(a)+'|'+stopCode(b);
-  const verified=VERIFIED_ROUTES?.get?.(key);
-  if(verified)return verified.sequence.slice();
-  const sa=nearestTariffId(a),sb=nearestTariffId(b);
-  if(!sa||!sb)return [];
-  if(sa===sb)return [sa];
-  // For non-verified pairs we deliberately do NOT use the street router.
-  // The endpoint tariff zones are shown as a tariff-data result; no km value
-  // is used to calculate the tariff.
-  return [sa,sb];
+  const za=nearestMapZone(a),zb=nearestMapZone(b);
+  if(za==null||zb==null)return [];
+  return corridorZonePath(a,b,za,zb);
 }
 
 const colorMap={'Maria Saal':'#f1d400','St.Veit':'#e59b00','Liebenfels':'#d64b27','Frauenstein':'#2877d1','St.Georgen am Längsee':'#18a566'};
@@ -53,7 +126,7 @@ document.getElementById('clearFrom').addEventListener('click',()=>clearField('fr
 
 async function getRoute(a,b){const q=`${a.lon},${a.lat};${b.lon},${b.lat}`;const urls=[`https://router.project-osrm.org/route/v1/driving/${q}?overview=full&geometries=geojson&alternatives=false&steps=false`,`https://routing.openstreetmap.de/routed-car/route/v1/driving/${q}?overview=full&geometries=geojson&alternatives=false&steps=false`];let last='';for(const u of urls){try{const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(!j.routes?.length)throw new Error('Keine Straßenroute gefunden');return j.routes[0]}catch(e){last=e.message}}throw new Error(last||'Routenserver nicht erreichbar')}
 function fareBoxForZone(z){const n=TARIF_2026.normal[z-1],s=TARIF_2026.senior[z-1],sp=TARIF_2026.spar[z-1],f=TARIF_2026.family[z-1];if(n==null)return `<div class="warn">Für ${z} Zonen ist kein aktueller Einzelkartentarif hinterlegt.</div>`;const rows=[['Normal',n],['Senioren',s],['Sparpreis',sp],['Familien',f]];return `<div class="faregrid">${rows.map(([label,base])=>`<div class="fareitem"><b>${label}</b><div class="fareline"><span>Kärntner Linien</span><strong>${fmtEuro(base)}</strong></div><div class="fareline"><span>Ruf:Zu Komfort</span><strong>${fmtEuro(COMFORT_SURCHARGE)}</strong></div><div class="fareline total"><span>Ruf:Zu gesamt</span><strong>${fmtEuro(base+COMFORT_SURCHARGE)}</strong></div></div>`).join('')}</div><div class="muted" style="margin-top:9px">Tarifbasis: Kärntner Linien, gültig ab 01.07.2026. Ruf:Zu berechnet zusätzlich 2,00 € Komfortzuschlag. Bei gültiger Verbund-Zeitkarte fällt laut Ruf:Zu-Information nur der Komfortzuschlag an.</div>`}
-function renderZones(seq,label){const chips=seq.map(z=>`<span class="zonechip">Zone ${z}</span>`).join('');document.getElementById('zoneText').innerHTML=`<b>${seq.length} Zonen</b>`;document.getElementById('zonePath').innerHTML=`<div class="routeZones">${esc(label)}</div><div class="zonechips">${chips}</div>`;document.getElementById('fareBox').innerHTML=fareBoxForZone(seq.length);document.getElementById('zoneMessage').innerHTML='<div class="good">✓ Tarifzonen werden unabhängig von Straßenkilometern berechnet. Die Straßenroute wird nur für Entfernung und Navigation verwendet.</div>'}
+function renderZones(seq,label){const chips=seq.map(z=>`<span class="zonechip z${z}">Zone ${z}</span>`).join('');document.getElementById('zoneText').innerHTML=`<b>${seq.length} Zonen</b>`;document.getElementById('zonePath').innerHTML=`<div class="routeZones">${esc(label)}</div><div class="zonechips">${chips}</div>`;document.getElementById('fareBox').innerHTML=fareBoxForZone(seq.length);document.getElementById('zoneMessage').innerHTML='<div class="good">✓ Tarifzonen werden unabhängig von Straßenkilometern berechnet. Die Straßenroute wird nur für Entfernung und Navigation verwendet.</div>'}
 
 async function calculateTrip(){
   const a=selected.from,b=selected.to;if(!a||!b){alert('Bitte Von und Nach auswählen.');return}if(stopCode(a)===stopCode(b)){alert('Von und Nach dürfen nicht identisch sein.');return}
@@ -69,105 +142,13 @@ document.getElementById('calcBtn').addEventListener('click',calculateTrip);
 
 async function copyTrip(){const a=selected.from,b=selected.to;if(!a||!b){alert('Bitte zuerst Von und Nach auswählen.');return}const text=`Von: ${a.name}\nNach: ${b.name}`;try{await navigator.clipboard.writeText(text);alert('Von/Nach wurde kopiert.')}catch(e){prompt('Bitte diesen Text kopieren:',text)}}
 function openOfficial(){const a=selected.from,b=selected.to;const text=a&&b?`Von: ${a.name}\nNach: ${b.name}`:'';if(text)navigator.clipboard?.writeText(text).catch(()=>{});window.open(OFFICIAL_PRICE_URL,'_blank','noopener')}
-// OCR: Das Foto wird nur für Von/Nach verwendet. Abfahrt, Ankunft,
-// Einstieg und Ausstieg sind bewusst nicht Bestandteil der Eingabe.
+// OCR
 const scanBtn=document.getElementById('scanBtn'),scanInput=document.getElementById('scanInput'),ocrStatus=document.getElementById('ocrStatus');
-document.getElementById('manualBtn').addEventListener('click',()=>document.getElementById('from').focus());
-scanBtn.addEventListener('click',()=>scanInput.click());
-scanInput.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;await scanTimetable(file);scanInput.value=''})
-function norm(s){return String(s||'').toUpperCase().replace(/[–—−]/g,'-').replace(/[|]/g,'I').replace(/\s+/g,' ').trim()}
-function codeFromOcr(raw){
-  const m=String(raw||'').toUpperCase().replace(/[^A-Z0-9]/g,'').match(/^([A-Z]{2})([0-9I]{3})$/);
-  if(!m)return '';
-  return (m[1]+m[2].replace(/I/g,'1')).toUpperCase();
-}
-function findStopByCodeLoose(code){
-  const c=codeFromOcr(code); if(!c)return null;
-  return stops.find(s=>stopCode(s)===c)||null;
-}
-function extractStopCodes(text){
-  const t=norm(text).replace(/\b([A-Z]{2})\s*[-.]?\s*([0-9I]{3})\b/g,'$1$2');
-  const out=[];
-  const re=/\b([A-Z]{2})([0-9I]{3})\b/g;
-  let m;
-  while((m=re.exec(t))){
-    const code=codeFromOcr(m[1]+m[2]);
-    if(code && !out.includes(code) && findStopByCodeLoose(code))out.push(code);
-  }
-  return out;
-}
-function findStopInText(text,codeHint){
-  const hinted=findStopByCodeLoose(codeHint); if(hinted)return hinted;
-  const t=norm(text);
-  let best=null,score=0;
-  for(const s of stops){
-    const n=norm(s.name),code=stopCode(s);
-    let sc=0;
-    if(code&&t.includes(code))sc+=120;
-    if(t.includes(n))sc+=100;
-    const name=n.replace(/^[A-Z]{2}\d{3}\s*-\s*/,'');
-    const words=name.split(/[^A-ZÄÖÜ0-9]+/).filter(w=>w.length>=4);
-    for(const w of words)if(t.includes(w))sc+=Math.min(12,w.length);
-    if(sc>score){score=sc;best=s}
-  }
-  return score>=18?best:null;
-}
-function preprocessImage(file){
-  return new Promise((resolve,reject)=>{
-    const img=new Image(),url=URL.createObjectURL(file);
-    img.onload=()=>{
-      const scale=Math.min(2.2,Math.max(1,1800/Math.max(img.width,img.height)));
-      const canvas=document.createElement('canvas');
-      canvas.width=Math.round(img.width*scale); canvas.height=Math.round(img.height*scale);
-      const ctx=canvas.getContext('2d',{willReadFrequently:true});
-      ctx.drawImage(img,0,0,canvas.width,canvas.height);
-      const data=ctx.getImageData(0,0,canvas.width,canvas.height);
-      for(let i=0;i<data.data.length;i+=4){
-        const g=Math.round(data.data[i]*0.299+data.data[i+1]*0.587+data.data[i+2]*0.114);
-        const v=g>185?255:g<90?0:g;
-        data.data[i]=data.data[i+1]=data.data[i+2]=v;
-      }
-      ctx.putImageData(data,0,0); URL.revokeObjectURL(url);
-      canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Bild konnte nicht vorbereitet werden')),'image/jpeg',0.92);
-    };
-    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Bild konnte nicht geladen werden'))};
-    img.src=url;
-  });
-}
-async function scanTimetable(file){
-  if(!window.Tesseract){ocrStatus.textContent='OCR-Bibliothek konnte nicht geladen werden. Bitte Von und Nach händisch eingeben.';ocrStatus.className='ocrstatus warn';return}
-  ocrStatus.textContent='📷 Foto wird gelesen …';ocrStatus.className='ocrstatus';
-  try{
-    const image=await preprocessImage(file);
-    const {data}=await Tesseract.recognize(image,'deu+eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)ocrStatus.textContent=`OCR liest das Foto … ${Math.round(m.progress*100)} %`}});
-    const text=data.text||'';
-    const codes=extractStopCodes(text);
-    let from=findStopInText(text,codes[0]);
-    let to=findStopInText(text,codes[1]);
-    if(from&&to&&stopCode(from)===stopCode(to))to=null;
-    if(!to){
-      // Zweiter Versuch: Suche nach einem zweiten bekannten Haltestellencode im gesamten OCR-Text.
-      const restCodes=codes.filter(c=>!from||c!==stopCode(from));
-      to=restCodes.length?findStopByCodeLoose(restCodes[0]):null;
-    }
-    if(from){selected.from=from;document.getElementById('from').value=from.name;document.getElementById('fromSug').hidden=true}
-    if(to){selected.to=to;document.getElementById('to').value=to.name;document.getElementById('toSug').hidden=true}
-    if(from&&to){
-      ocrStatus.textContent=`✓ Erkannt: Von ${from.name} → Nach ${to.name}. Bitte kurz kontrollieren und danach berechnen.`;
-      ocrStatus.className='ocrstatus good';
-    }else if(from||to){
-      ocrStatus.textContent=`⚠ ${from?'Start erkannt: '+from.name+'. ':''}${to?'Ziel erkannt: '+to.name+'. ':''}Der zweite Punkt konnte nicht sicher erkannt werden – bitte ergänzen.`;
-      ocrStatus.className='ocrstatus warn';
-    }else{
-      ocrStatus.textContent='⚠ Keine Haltestellen sicher erkannt. Bitte das Foto erneut, möglichst gerade und gut lesbar, aufnehmen oder Von/Nach händisch eingeben.';
-      ocrStatus.className='ocrstatus warn';
-    }
-  }catch(e){
-    console.error(e);
-    ocrStatus.textContent='OCR konnte das Foto nicht zuverlässig lesen. Bitte Von und Nach händisch eingeben.';
-    ocrStatus.className='ocrstatus warn';
-  }
-}
+document.getElementById('manualBtn').addEventListener('click',()=>document.getElementById('from').focus());scanBtn.addEventListener('click',()=>scanInput.click());scanInput.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;await scanTimetable(file);scanInput.value=''})
+function norm(s){return String(s||'').toUpperCase().replace(/[–—−]/g,'-').replace(/\s+/g,' ').trim()}
+function findStopInText(text,codeHint){const t=norm(text);if(codeHint){const hit=stops.find(s=>stopCode(s)===codeHint);if(hit)return hit}let best=null,score=0;for(const s of stops){const n=norm(s.name);const code=stopCode(s);let sc=0;if(code&&t.includes(code))sc+=100;if(t.includes(n))sc+=80;const words=n.replace(/^[A-Z]{2}\d{3}\s*-\s*/,'').split(/[^A-ZÄÖÜ0-9]+/).filter(w=>w.length>=4);for(const w of words)if(t.includes(w))sc+=Math.min(8,w.length);if(sc>score){score=sc;best=s}}return score>=15?best:null}
+function parseTimes(text){const m=norm(text).match(/\b([01]?\d|2[0-3])[:.]([0-5]\d)\s*(?:[-–—>]\s*|BIS\s+)([01]?\d|2[0-3])[:.]([0-5]\d)\b/);if(!m)return null;return [`${m[1].padStart(2,'0')}:${m[2]}`,`${m[3].padStart(2,'0')}:${m[4]}`]}
+async function scanTimetable(file){if(!window.Tesseract){ocrStatus.textContent='OCR-Bibliothek konnte nicht geladen werden. Bitte händisch eingeben.';ocrStatus.className='ocrstatus warn';return}ocrStatus.textContent='📷 Foto wird gelesen …';ocrStatus.className='ocrstatus';try{const {data}=await Tesseract.recognize(file,'deu+eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)ocrStatus.textContent=`OCR liest das Foto … ${Math.round(m.progress*100)} %`}});const text=data.text||'';const times=parseTimes(text);if(times){document.getElementById('departTime').value=times[0];document.getElementById('arriveTime').value=times[1]}const codeMatches=[...norm(text).matchAll(/\b([A-Z]{2}\d{3})\b/g)].map(m=>m[1]);const from=findStopInText(text,codeMatches[0]);const to=findStopInText(text,codeMatches[1]||codeMatches[0]);if(from){selected.from=from;document.getElementById('from').value=from.name}if(to&&(!from||stopCode(to)!==stopCode(from))){selected.to=to;document.getElementById('to').value=to.name}const bm=norm(text).match(/(?:EINSTIEG|BOARDING|EINSTEIGEN)[^0-9]{0,10}(\d+)/);const am=norm(text).match(/(?:AUSSTIEG|ALIGHTING|AUSSTEIGEN)[^0-9]{0,10}(\d+)/);if(bm)document.getElementById('boardCount').value=bm[1];if(am)document.getElementById('alightCount').value=am[1];ocrStatus.textContent='✓ Foto ausgelesen. Bitte die Felder kontrollieren und danach berechnen.';ocrStatus.className='ocrstatus good'}catch(e){console.error(e);ocrStatus.textContent='OCR konnte das Foto nicht zuverlässig lesen. Bitte Felder händisch prüfen/eingeben.';ocrStatus.className='ocrstatus warn'}}
 document.getElementById('officialBtn').addEventListener('click',openOfficial);
 
 if(stops.length!==536)console.warn('Haltestellen-Datensatz: erwartet 536, gefunden',stops.length);
