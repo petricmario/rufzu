@@ -3,26 +3,145 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#ffb300">
+<meta name="theme-color" content="#ffffff">
 <meta name="description" content="Ruf:Zu – Tarif- und Routenberechnung für Zollfeld & Umgebung">
 <title>Ruf:Zu – Tarifberechnung</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <style>
-:root{--orange:#ffb300;--orange2:#ff9700;--ink:#20262d;--muted:#68717a;--paper:#fff;--line:#e9edf1;--soft:#fff7df;--green:#16865a;--shadow:0 12px 35px rgba(28,34,40,.12);--radius:22px}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html{background:#f3f5f7}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:#f3f5f7;min-height:100vh}button,input{font:inherit}button{cursor:pointer;border:0}
-.app{max-width:760px;margin:auto;background:#f3f5f7;min-height:100vh;overflow:hidden}.hero{position:relative;background:linear-gradient(135deg,#ffbe16 0%,#ffad00 58%,#ff9700 100%);padding:24px 20px 72px;color:#1e2328;overflow:hidden}.hero:after{content:"";position:absolute;left:-12%;right:-12%;bottom:-80px;height:130px;background:#f3f5f7;border-radius:50% 50% 0 0/100% 100% 0 0}.brand{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2}.brandmark{width:52px;height:38px;position:relative;margin-right:10px}.brandmark:before,.brandmark:after{content:"";position:absolute;border:5px solid #fff;border-left-color:transparent;border-radius:50%;transform:skewX(-18deg) rotate(-12deg)}.brandmark:before{width:42px;height:19px;top:1px;left:2px}.brandmark:after{width:31px;height:13px;top:13px;left:11px}.brandtext{display:flex;align-items:center;margin-right:auto}.ruf{font-size:36px;line-height:1;font-weight:900;font-style:italic;letter-spacing:-1.5px}.zu{color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.1)}.tag{font-size:13px;font-style:italic;margin-top:4px}.phone{font-weight:800;font-size:13px;text-align:right}.hero h1{position:relative;z-index:2;font-size:29px;line-height:1.08;margin:34px 0 8px;font-weight:900;max-width:640px}.hero p{position:relative;z-index:2;margin:0;max-width:610px;font-size:15px;line-height:1.45;font-weight:600}.content{padding:0 14px 30px;position:relative;z-index:3}.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.04);padding:18px;margin-top:-30px}.section-title{font-weight:900;text-transform:uppercase;letter-spacing:.5px;font-size:14px;margin-bottom:13px}.field{position:relative;margin-bottom:12px}.label{font-size:12px;color:#68717a;font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin:0 0 5px 4px}.inputwrap{display:flex;align-items:center;background:#f7f8f9;border:1px solid #dfe4e8;border-radius:15px;min-height:58px}.pin{width:42px;text-align:center;font-size:21px}.inputwrap input{flex:1;min-width:0;border:0;background:transparent;outline:0;padding:15px 5px;font-weight:700;color:var(--ink)}.inputwrap input[readonly]{color:#39434b}.clear{background:transparent;color:#8b949c;font-size:22px;padding:10px 14px}.fixedbadge{font-size:10px;background:#eef1f3;border-radius:999px;padding:6px 8px;margin-right:9px;font-weight:900}.suggestions{position:absolute;left:0;right:0;top:81px;background:#fff;border:1px solid #dfe4e8;border-radius:15px;box-shadow:0 15px 35px rgba(0,0,0,.16);z-index:50;overflow:hidden;max-height:300px;overflow-y:auto}.suggestions[hidden]{display:none}.sug{padding:13px 15px;border-bottom:1px solid #eef0f2;display:flex;flex-direction:column;gap:3px}.sug:last-child{border-bottom:0}.sug b{font-size:14px}.sug span{font-size:12px;color:#7a838b}.calc{width:100%;min-height:58px;border-radius:16px;background:var(--ink);color:#fff;font-weight:900;letter-spacing:.3px;font-size:16px;box-shadow:0 8px 20px rgba(32,38,45,.18);margin-top:5px}.calc:active{transform:translateY(1px)}.subactions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}.secondary{min-height:46px;border:1px solid #dfe4e8;background:#fff;border-radius:13px;font-weight:800;color:#3d454c}.result{display:none;margin-top:14px}.resultcard{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}.resulthead{background:var(--ink);color:#fff;padding:19px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1px;opacity:.7;font-weight:900}.route{margin-top:8px;font-size:14px;line-height:1.6}.route b{font-weight:900}.zonehero{background:linear-gradient(135deg,#ffbe16,#ff9700);padding:20px}.zonebig{font-size:38px;font-weight:950;letter-spacing:-1px}.zonepath{margin-top:8px;font-size:13px;font-weight:900;word-break:break-word}.distance{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}.distance strong{font-size:21px}.distance small{display:block;color:var(--muted);line-height:1.35;margin-top:3px}.info{padding:14px 20px;font-size:12px;color:#55606a;background:#fafbfc}.good{color:var(--green);font-weight:800;background:#edf9f3;border:1px solid #cfeedd;padding:11px 12px;border-radius:12px}.warn{color:#8a5b00;background:#fff6dd;border:1px solid #f0d58b;padding:11px 12px;border-radius:12px}.farebox{padding:16px 20px}.fare-title{font-weight:900;margin-bottom:12px}.faregrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.fareitem{border:1px solid #e4e8eb;border-radius:15px;padding:12px;background:#fff}.fareitem>b{font-size:13px}.fareline{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:11px;color:#69727a}.fareline strong{font-size:13px;color:#222}.fareline.total{border-top:1px solid #edf0f2;padding-top:8px;color:#222}.fareline.total strong{font-size:16px}.muted{font-size:11px;color:#747d85;line-height:1.45}.resultactions{padding:0 20px 20px;display:grid;grid-template-columns:1fr 1fr;gap:10px}.primarylink,.orangeLink{display:flex;align-items:center;justify-content:center;text-decoration:none;min-height:52px;border-radius:14px;font-weight:900}.primarylink{background:var(--ink);color:#fff}.orangeLink{background:var(--orange);color:#20262d}.mapcard{margin-top:14px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}.maphead{padding:15px 18px;font-weight:900;display:flex;justify-content:space-between}.maphead span{font-size:11px;color:#7b848c;font-weight:700}.map{height:360px}.footer{padding:22px 18px 34px;text-align:center;color:#747d85;font-size:11px;line-height:1.5}.footer b{color:#30373d}.official{color:#30373d;text-decoration:underline}.routeZones{font-weight:900;line-height:1.5}.leaflet-control-attribution{font-size:9px}
-@media(min-width:700px){.hero{padding-left:34px;padding-right:34px}.content{padding-left:24px;padding-right:24px}.hero h1{font-size:34px}.map{height:430px}}@media(max-width:430px){.ruf{font-size:31px}.phone{font-size:11px}.hero h1{font-size:25px}.hero{padding-top:18px}.faregrid{grid-template-columns:1fr}.resultactions,.subactions{grid-template-columns:1fr 1fr}.map{height:320px}}
+:root{
+  --orange:#f7941e;--orange2:#e87c0a;--ink:#1c2024;--muted:#6a737b;
+  --paper:#fff;--line:#e9edf1;--soft:#fff7df;--green:#16865a;
+  --shadow:0 12px 35px rgba(28,34,40,.12);--radius:22px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:#f3f5f7}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:#f3f5f7;min-height:100vh}
+button,input{font:inherit}
+button{cursor:pointer;border:0}
+.app{max-width:760px;margin:auto;background:#f3f5f7;min-height:100vh;overflow:hidden}
 
-.vehicle-hero{margin-top:12px;background:#20262d;color:#fff;border-radius:20px;padding:14px;display:grid;grid-template-columns:115px 1fr;gap:14px;align-items:center;overflow:hidden}.vehicle-photo{width:115px;height:82px;border-radius:14px;background:#3a4249;display:flex;align-items:center;justify-content:center;font-size:42px;overflow:hidden}.vehicle-photo img{width:100%;height:100%;object-fit:cover;display:none}.vehicle-copy b{display:block;font-size:16px}.vehicle-copy span{display:block;font-size:12px;color:#c8ced3;margin-top:4px;line-height:1.35}.scanrow{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}.scanbtn{min-height:48px;border-radius:13px;background:#ffb300;color:#20262d;font-weight:900}.timegrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.passgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.miniinput{width:100%;min-height:50px;border:1px solid #dfe4e8;border-radius:13px;padding:12px;font-weight:700;background:#f7f8f9;outline:0}.ocrstatus{margin-top:8px;font-size:12px;color:#66717a;line-height:1.4}.ocrstatus.good{color:#16865a}.ocrstatus.warn{color:#8a5b00}
-@media(max-width:430px){.vehicle-hero{grid-template-columns:92px 1fr}.vehicle-photo{width:92px;height:70px}.scanrow{grid-template-columns:1fr}.timegrid,.passgrid{grid-template-columns:1fr 1fr}}
+/* HERO — weiß wie das Fahrzeug, mit orangem Akzent */
+.hero{position:relative;background:#fff;padding:22px 20px 66px;color:var(--ink);border-bottom:4px solid var(--orange);overflow:hidden}
+.hero:after{content:"";position:absolute;left:-12%;right:-12%;bottom:-80px;height:130px;background:#f3f5f7;border-radius:50% 50% 0 0/100% 100% 0 0}
+.brand{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2;gap:12px}
+.brandtext{display:flex;align-items:center;gap:12px;min-width:0}
+.brandmark{width:64px;height:44px;flex-shrink:0;display:block}
+.brandmark svg{width:100%;height:100%;display:block}
+.wordmark{display:flex;flex-direction:column;line-height:1}
+.ruf{font-size:32px;font-weight:900;font-style:italic;letter-spacing:-1.2px;color:var(--ink);white-space:nowrap}
+.ruf .zu{color:var(--orange)}
+.tag{font-size:11.5px;font-weight:700;color:var(--muted);margin-top:5px;letter-spacing:.2px;text-transform:uppercase}
+.phone{font-weight:900;font-size:13px;text-align:right;color:var(--ink);line-height:1.3;flex-shrink:0}
+.phone a{color:inherit;text-decoration:none;display:block}
+.phone .lbl{display:block;font-size:10px;color:var(--orange);letter-spacing:.6px;text-transform:uppercase}
+.hero h1{position:relative;z-index:2;font-size:26px;line-height:1.15;margin:28px 0 8px;font-weight:900;max-width:640px;color:var(--ink)}
+.hero p{position:relative;z-index:2;margin:0;max-width:610px;font-size:14.5px;line-height:1.5;color:var(--muted);font-weight:600}
+
+.content{padding:0 14px 30px;position:relative;z-index:3}
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.04);padding:18px;margin-top:-30px}
+.section-title{font-weight:900;text-transform:uppercase;letter-spacing:.5px;font-size:13px;margin-bottom:13px;color:var(--ink);display:flex;align-items:center;gap:8px}
+.section-title:before{content:"";width:22px;height:3px;background:var(--orange);border-radius:2px}
+
+.field{position:relative;margin-bottom:12px}
+.label{font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin:0 0 5px 4px}
+.inputwrap{display:flex;align-items:center;background:#f7f8f9;border:1px solid #dfe4e8;border-radius:15px;min-height:58px;transition:border-color .15s,background .15s}
+.inputwrap:focus-within{border-color:var(--orange);background:#fffaf2}
+.pin{width:42px;text-align:center;font-size:18px;color:var(--orange)}
+.pin.to{color:var(--ink)}
+.inputwrap input{flex:1;min-width:0;border:0;background:transparent;outline:0;padding:15px 5px;font-weight:700;color:var(--ink)}
+.inputwrap input[readonly]{color:#39434b}
+.clear{background:transparent;color:#8b949c;font-size:22px;padding:10px 14px}
+.suggestions{position:absolute;left:0;right:0;top:81px;background:#fff;border:1px solid #dfe4e8;border-radius:15px;box-shadow:0 15px 35px rgba(0,0,0,.16);z-index:50;overflow:hidden;max-height:300px;overflow-y:auto}
+.suggestions[hidden]{display:none}
+.sug{padding:13px 15px;border-bottom:1px solid #eef0f2;display:flex;flex-direction:column;gap:3px}
+.sug:last-child{border-bottom:0}
+.sug b{font-size:14px}
+.sug span{font-size:12px;color:#7a838b}
+
+.calc{width:100%;min-height:58px;border-radius:16px;background:var(--orange);color:#fff;font-weight:900;letter-spacing:.4px;font-size:15.5px;box-shadow:0 8px 20px rgba(247,148,30,.35);margin-top:10px;text-transform:uppercase}
+.calc:active{transform:translateY(1px)}
+.subactions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
+.secondary{min-height:46px;border:1px solid #dfe4e8;background:#fff;border-radius:13px;font-weight:800;color:#3d454c;font-size:13px}
+
+.result{display:none;margin-top:14px}
+.resultcard{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.resulthead{background:var(--ink);color:#fff;padding:19px}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1px;opacity:.7;font-weight:900;color:var(--orange)}
+.route{margin-top:8px;font-size:14px;line-height:1.6}
+.route b{font-weight:900}
+.zonehero{background:linear-gradient(135deg,#f7941e,#e87c0a);padding:20px;color:#fff}
+.zonebig{font-size:38px;font-weight:950;letter-spacing:-1px}
+.zonepath{margin-top:8px;font-size:13px;font-weight:900;word-break:break-word}
+.distance{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+.distance strong{font-size:21px}
+.distance small{display:block;color:var(--muted);line-height:1.35;margin-top:3px}
+.info{padding:14px 20px;font-size:12px;color:#55606a;background:#fafbfc}
+.good{color:var(--green);font-weight:800;background:#edf9f3;border:1px solid #cfeedd;padding:11px 12px;border-radius:12px}
+.warn{color:#8a5b00;background:#fff6dd;border:1px solid #f0d58b;padding:11px 12px;border-radius:12px}
+.farebox{padding:16px 20px}
+.fare-title{font-weight:900;margin-bottom:12px}
+.faregrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fareitem{border:1px solid #e4e8eb;border-radius:15px;padding:12px;background:#fff}
+.fareitem>b{font-size:13px}
+.fareline{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:11px;color:#69727a}
+.fareline strong{font-size:13px;color:#222}
+.fareline.total{border-top:1px solid #edf0f2;padding-top:8px;color:#222}
+.fareline.total strong{font-size:16px;color:var(--orange)}
+.muted{font-size:11px;color:#747d85;line-height:1.45}
+.resultactions{padding:0 20px 20px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.primarylink,.orangeLink{display:flex;align-items:center;justify-content:center;text-decoration:none;min-height:52px;border-radius:14px;font-weight:900}
+.primarylink{background:var(--ink);color:#fff}
+.orangeLink{background:var(--orange);color:#fff}
+.mapcard{margin-top:14px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.maphead{padding:15px 18px;font-weight:900;display:flex;justify-content:space-between}
+.maphead span{font-size:11px;color:#7b848c;font-weight:700}
+.map{height:360px}
+.footer{padding:22px 18px 34px;text-align:center;color:#747d85;font-size:11px;line-height:1.5}
+.footer b{color:#30373d}
+.official{color:#30373d;text-decoration:underline}
+.routeZones{font-weight:900;line-height:1.5}
+.zonechips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.zonechip{background:rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:900;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.5)}
+.leaflet-control-attribution{font-size:9px}
+
+/* OCR-Bereich */
+.vehicle-hero{margin-top:12px;background:#fff;border:1px solid #e9edf1;color:var(--ink);border-radius:20px;padding:14px;display:grid;grid-template-columns:115px 1fr;gap:14px;align-items:center;overflow:hidden}
+.vehicle-photo{width:115px;height:82px;border-radius:14px;background:#f3f5f7;display:flex;align-items:center;justify-content:center;font-size:42px;overflow:hidden}
+.vehicle-photo img{width:100%;height:100%;object-fit:cover;display:none}
+.vehicle-copy b{display:block;font-size:15px}
+.vehicle-copy span{display:block;font-size:12px;color:#6a737b;margin-top:4px;line-height:1.35}
+.scanrow{display:grid;grid-template-columns:1fr;gap:9px;margin-top:9px}
+.scanbtn{min-height:50px;border-radius:13px;background:#fff;border:2px solid var(--orange);color:var(--orange);font-weight:900;font-size:13.5px}
+.ocrstatus{margin-top:8px;font-size:12px;color:#66717a;line-height:1.4}
+.ocrstatus.good{color:#16865a}
+.ocrstatus.warn{color:#8a5b00}
+
+@media(min-width:700px){.hero{padding-left:34px;padding-right:34px}.content{padding-left:24px;padding-right:24px}.hero h1{font-size:30px}.map{height:430px}.ruf{font-size:36px}.brandmark{width:72px;height:50px}}
+@media(max-width:430px){.ruf{font-size:26px}.phone{font-size:11px}.phone .lbl{font-size:9px}.hero h1{font-size:22px}.hero{padding-top:18px}.faregrid{grid-template-columns:1fr}.resultactions,.subactions{grid-template-columns:1fr 1fr}.map{height:320px}.vehicle-hero{grid-template-columns:92px 1fr}.vehicle-photo{width:92px;height:70px}}
 </style>
 </head>
 <body>
 <div class="app">
 <header class="hero">
   <div class="brand">
-    <div class="brandtext"><div class="brandmark"></div><div><div class="ruf">Ruf:<span class="zu">Zu</span></div><div class="tag">Rufbus Zollfeld &amp; Umgebung</div></div></div>
-    <div class="phone">Ruf:Zu<br>04 212 / 93083</div>
+    <div class="brandtext">
+      <div class="brandmark" aria-hidden="true">
+        <svg viewBox="0 0 80 52" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 44 V16 Q10 6 22 6 H34 Q48 6 48 20 Q48 30 34 32 H20 M34 32 L50 44"
+                fill="none" stroke="#f7941e" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M42 24 Q58 18 70 6"
+                fill="none" stroke="#1c2024" stroke-width="8" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="ruf">Ruf:<span class="zu">Zu</span></div>
+        <div class="tag">Rufbus Zollfeld &amp; Umgebung</div>
+      </div>
+    </div>
+    <div class="phone">
+      <span class="lbl">Anrufen</span>
+      <a href="tel:+43421293083">04212 / 93083</a>
+    </div>
   </div>
   <h1>Gut zu wissen: Ruf:Zu bringt dich zuverlässig zu deinen Anschlussverbindungen.</h1>
   <p>Fahrt planen, Tarifzonen prüfen und direkt zur Straßennavigation wechseln.</p>
@@ -39,25 +158,19 @@
       <input id="scanInput" type="file" accept="image/*" capture="environment" hidden>
     </div>
     <div class="ocrstatus" id="ocrStatus">Foto-Scan füllt die Eingabefelder automatisch aus. Du kannst danach alles manuell korrigieren.</div>
-    <div class="field" style="margin-top:12px">
+
+    <div class="field" style="margin-top:14px">
       <div class="label">Von · Startpunkt</div>
       <div class="inputwrap"><div class="pin">●</div><input id="from" autocomplete="off" placeholder="Start-Haltestelle suchen …"><button class="clear" id="clearFrom" aria-label="Start löschen">×</button></div>
       <div class="suggestions" id="fromSug" hidden></div>
     </div>
     <div class="field">
       <div class="label">Nach · Haltestelle</div>
-      <div class="inputwrap"><div class="pin">◎</div><input id="to" autocomplete="off" placeholder="Haltestelle suchen …"><button class="clear" id="clearTo" aria-label="Eingabe löschen">×</button></div>
+      <div class="inputwrap"><div class="pin to">◎</div><input id="to" autocomplete="off" placeholder="Haltestelle suchen …"><button class="clear" id="clearTo" aria-label="Eingabe löschen">×</button></div>
       <div class="suggestions" id="toSug" hidden></div>
     </div>
-    <div class="timegrid">
-      <div class="field"><div class="label">Abfahrt</div><input class="miniinput" id="departTime" type="time"></div>
-      <div class="field"><div class="label">Ankunft</div><input class="miniinput" id="arriveTime" type="time"></div>
-    </div>
-    <div class="passgrid">
-      <div class="field"><div class="label">Einstieg</div><input class="miniinput" id="boardCount" inputmode="numeric" placeholder="z. B. 1"></div>
-      <div class="field"><div class="label">Ausstieg</div><input class="miniinput" id="alightCount" inputmode="numeric" placeholder="z. B. 1"></div>
-    </div>
-    <button class="calc" id="calcBtn">TARIF &amp; ROUTE BERECHNEN</button>
+
+    <button class="calc" id="calcBtn">Tarif &amp; Route berechnen</button>
     <div class="subactions"><button class="secondary" id="copyBtn">↗ Von / Nach kopieren</button><button class="secondary" id="officialBtn">€ Offizielle Preisauskunft</button></div>
   </section>
 
@@ -65,7 +178,7 @@
     <div class="resultcard">
       <div class="resulthead"><div class="eyebrow">Tarifberechnung</div><div class="route" id="routeText"></div></div>
       <div class="zonehero"><div class="zonebig" id="zoneText">—</div><div class="zonepath" id="zonePath">Noch keine Fahrt berechnet.</div></div>
-      <div class="distance"><div><strong id="distanceText">—</strong><small id="distanceNote">Straßenroute wird berechnet …</small></div><div>🚗</div></div>
+      <div class="distance"><div><strong id="distanceText">—</strong><small id="distanceNote">Straßenroute wird berechnet …</small></div><div style="color:var(--orange);font-size:24px">🚐</div></div>
       <div class="info" id="zoneMessage"></div>
       <div class="farebox"><div class="fare-title">Tarif</div><div id="fareBox"></div></div>
       <div class="resultactions"><a class="primarylink" id="nav" href="#" target="_blank" rel="noopener">🧭 NAVIGATION</a><a class="orangeLink" id="zonePlan" href="https://www.kaerntner-linien.at/wp-content/uploads/tarifzonenplan-05-2026.pdf" target="_blank" rel="noopener">▦ ZONENPLAN</a></div>
