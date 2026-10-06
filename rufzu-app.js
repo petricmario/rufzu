@@ -49,168 +49,24 @@ document.getElementById('clearTo').addEventListener('click',()=>clearField('to')
 document.getElementById('swapBtn')?.addEventListener('click',swapStops);
 
 
-function normalizeText(s){
-  return String(s||'').toUpperCase()
-    .replace(/Ä/g,'AE').replace(/Ö/g,'OE').replace(/Ü/g,'UE').replace(/ß/g,'SS')
-    .replace(/[^A-Z0-9\s-]/g,' ')
-    .replace(/\s+/g,' ').trim();
-}
+function normalizeText(s){return String(s||'').toUpperCase().replace(/Ä/g,'AE').replace(/Ö/g,'OE').replace(/Ü/g,'UE').replace(/ß/g,'SS').replace(/[^A-Z0-9\s-]/g,' ').replace(/\s+/g,' ').trim();}
 function compactText(s){return normalizeText(s).replace(/[^A-Z0-9]/g,'');}
-function editDistance(a,b){
-  a=String(a||'');b=String(b||'');
-  const prev=Array.from({length:b.length+1},(_,i)=>i);
-  for(let i=1;i<=a.length;i++){
-    const cur=[i];
-    for(let j=1;j<=b.length;j++)cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
-    for(let j=0;j<cur.length;j++)prev[j]=cur[j];
-  }
-  return prev[b.length];
-}
+function editDistance(a,b){a=String(a||'');b=String(b||'');const prev=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){const cur=[i];for(let j=1;j<=b.length;j++)cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));for(let j=0;j<cur.length;j++)prev[j]=cur[j];}return prev[b.length];}
 const OCR_CODES=stops.map(s=>({code:stopCode(s),stop:s})).filter(x=>/^[A-Z]{2}\d{3}$/.test(x.code));
 const OCR_CONFUSIONS={O:'0',Q:'0',D:'0',I:'1',L:'1',Z:'2',S:'5',G:'6',T:'7',B:'8',P:'9'};
-function normalizeOcrCode(raw){
-  let r=compactText(raw);
-  if(r.length<4||r.length>7)return null;
-  // OCR kann Leerzeichen/Trennzeichen verlieren oder ein Zeichen verschlucken.
-  if(r.length===4)r=r.slice(0,2)+'0'+r.slice(2);
-  if(r.length>5)r=r.slice(0,5);
-  const a=r.split('');
-  if(a.length<5)return null;
-  for(let i=2;i<5;i++)a[i]=OCR_CONFUSIONS[a[i]]||a[i];
-  return /^[A-Z]{2}\d{3}$/.test(a.join(''))?a.join(''):null;
-}
-function ocrCodeScore(raw,known){
-  const r=normalizeOcrCode(raw);if(!r)return 0;
-  let d=editDistance(r,known);
-  if(r.slice(0,2)===known.slice(0,2))d=Math.max(0,d-1);
-  return d<=2?100-d*35:0;
-}
-function findStopByOcrCode(raw){
-  let best=null,bestScore=0;
-  for(const item of OCR_CODES){const score=ocrCodeScore(raw,item.code);if(score>bestScore){bestScore=score;best=item.stop;}}
-  return bestScore>=65?best:null;
-}
-function tokenSimilarity(a,b){
-  a=compactText(a);b=compactText(b);if(!a||!b)return 0;
-  const d=editDistance(a,b);return 1-d/Math.max(a.length,b.length);
-}
-function stopNameScore(line,stop){
-  const t=compactText(line),code=stopCode(stop);let score=0;
-  if(code&&t.includes(code))score+=1000;
-  const name=normalizeText(stop.name).replace(/^[A-Z]{2}\d{3}\s*[-.:]?\s*/,'');
-  const words=name.split(/[^A-Z0-9]+/).filter(w=>w.length>=3);
-  const tokens=t.match(/[A-Z0-9]{3,}/g)||[];
-  for(const w of words){
-    const cw=compactText(w);if(!cw)continue;
-    if(t.includes(cw)){score+=Math.min(180,cw.length*18);continue;}
-    let best=0;for(const x of tokens)best=Math.max(best,tokenSimilarity(x,cw));
-    if(best>=0.65)score+=Math.round(best*70);
-  }
-  return score;
-}
-function findStopFromOCR(text){
-  const lines=String(text||'').split(/\r?\n/).map(normalizeText).filter(Boolean);
-  const found=new Map();
-  const codeRx=/[A-Z0-9]{1,3}\s*[-.:]?\s*[A-Z0-9]{2,4}/g;
-  for(const line of lines){
-    for(const raw of line.match(codeRx)||[]){
-      const hit=findStopByOcrCode(raw);if(hit){const c=stopCode(hit);found.set(c,{stop:hit,score:Math.max(found.get(c)?.score||0,500)});}
-    }
-    for(const item of OCR_CODES){
-      const score=stopNameScore(line,item.stop);
-      if(score>=45){const c=stopCode(item.stop),old=found.get(c);if(!old||score>old.score)found.set(c,{stop:item.stop,score});}
-    }
-  }
-  return [...found.values()].sort((a,b)=>b.score-a.score).map(x=>x.stop);
-}
+function normalizeOcrCode(raw){let r=compactText(raw);if(r.length<4||r.length>7)return null;if(r.length===4)r=r.slice(0,2)+'0'+r.slice(2);if(r.length>5)r=r.slice(0,5);const a=r.split('');if(a.length<5)return null;for(let i=2;i<5;i++)a[i]=OCR_CONFUSIONS[a[i]]||a[i];return /^[A-Z]{2}\d{3}$/.test(a.join(''))?a.join(''):null;}
+function ocrCodeScore(raw,known){const r=normalizeOcrCode(raw);if(!r)return 0;let d=editDistance(r,known);if(r.slice(0,2)===known.slice(0,2))d=Math.max(0,d-1);return d<=2?100-d*35:0;}
+function findStopByOcrCode(raw){let best=null,bestScore=0;for(const item of OCR_CODES){const score=ocrCodeScore(raw,item.code);if(score>bestScore){bestScore=score;best=item.stop;}}return bestScore>=65?best:null;}
+function tokenSimilarity(a,b){a=compactText(a);b=compactText(b);if(!a||!b)return 0;return 1-editDistance(a,b)/Math.max(a.length,b.length);}
+function stopNameScore(line,stop){const t=compactText(line),code=stopCode(stop);let score=0;if(code&&t.includes(code))score+=1000;const name=normalizeText(stop.name).replace(/^[A-Z]{2}\d{3}\s*[-.:]?\s*/,'');const words=name.split(/[^A-Z0-9]+/).filter(w=>w.length>=3);const tokens=t.match(/[A-Z0-9]{3,}/g)||[];for(const w of words){const cw=compactText(w);if(!cw)continue;if(t.includes(cw)){score+=Math.min(180,cw.length*18);continue;}let best=0;for(const x of tokens)best=Math.max(best,tokenSimilarity(x,cw));if(best>=0.68)score+=Math.round(best*70);}return score;}
+function findStopFromOCR(text){const lines=String(text||'').split(/\r?\n/).map(normalizeText).filter(Boolean);const found=new Map();const codeRx=/[A-Z0-9]{1,3}\s*[-.:]?\s*[A-Z0-9]{2,4}/g;for(const line of lines){for(const raw of line.match(codeRx)||[]){const hit=findStopByOcrCode(raw);if(hit){const c=stopCode(hit);found.set(c,{stop:hit,score:Math.max(found.get(c)?.score||0,500)});}}for(const item of OCR_CODES){const score=stopNameScore(line,item.stop);if(score>=45){const c=stopCode(item.stop),old=found.get(c);if(!old||score>old.score)found.set(c,{stop:item.stop,score});}}}return [...found.values()].sort((a,b)=>b.score-a.score).map(x=>x.stop);}
 function findTimes(text){return [...String(text||'').matchAll(/\b([01]?\d|2[0-3])\s*[:.]\s*([0-5]\d)\b/g)].map(m=>`${String(m[1]).padStart(2,'0')}:${m[2]}`);}
-function findPassengerNumbers(text){
-  const t=String(text||''),up=t.toUpperCase();
-  const nums=[...t.matchAll(/\b(\d{1,2})\b/g)].map(m=>Number(m[1])).filter(n=>n<=99);
-  let board=null,alight=null;
-  const bm=up.match(/(?:EINSTEIG|EINSTIEG|ZUSTIEG|ABHOL|↑)\D{0,12}(\d{1,2})/i);
-  const am=up.match(/(?:AUSSTEIG|AUSSTIEG|ABGANG|↓)\D{0,12}(\d{1,2})/i);
-  if(bm)board=Number(bm[1]);if(am)alight=Number(am[1]);
-  if(board===null&&nums.length>=2)board=nums[0];if(alight===null&&nums.length>=2)alight=nums[1];
-  return {board,alight};
-}
-function preprocessOcrImage(file,mode){
-  return new Promise((resolve,reject)=>{
-    const img=new Image();
-    img.onload=()=>{
-      const maxWidth=2600;
-      const scale=Math.min(3,Math.max(1,maxWidth/img.naturalWidth));
-      const w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));
-      const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
-      const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);
-      const data=ctx.getImageData(0,0,w,h),p=data.data;
-      for(let i=0;i<p.length;i+=4){
-        let g=.299*p[i]+.587*p[i+1]+.114*p[i+2];
-        if(mode==='threshold')g=g>165?255:0;else g=Math.max(0,Math.min(255,(g-128)*1.5+128));
-        p[i]=p[i+1]=p[i+2]=g;
-      }
-      ctx.putImageData(data,0,0);resolve(canvas);URL.revokeObjectURL(img.src);
-    };
-    img.onerror=()=>reject(new Error('Bild konnte nicht verarbeitet werden'));
-    img.src=URL.createObjectURL(file);
-  });
-}
-async function recognizeOcr(image,psm,status){
-  return Tesseract.recognize(image,'deu+eng',{logger:m=>{
-    if(m.status==='recognizing text'&&m.progress)status.textContent='⏳ Text wird erkannt … '+Math.round(m.progress*100)+' %';
-  },config:{tessedit_pageseg_mode:String(psm),preserve_interword_spaces:'1'}});
-}
-function showOcrCandidates(candidates){
-  const status=document.getElementById('ocrStatus');if(!status)return;
-  const unique=[];for(const c of candidates||[]){if(c&&!unique.some(x=>stopCode(x)===stopCode(c)))unique.push(c);if(unique.length>=6)break;}
-  if(!unique.length){status.className='ocrstatus warn';status.textContent='Keine Haltestelle sicher erkannt. Bitte Foto näher/gerader aufnehmen oder händisch auswählen.';return;}
-  status.className='ocrstatus warn';
-  status.innerHTML='<b>Mögliche Haltestellen:</b><div class="ocrchoices"></div><div style="margin-top:6px">Bitte die richtige Haltestelle antippen. Danach ggf. das Foto nochmals für die zweite Haltestelle scannen.</div>';
-  const box=status.querySelector('.ocrchoices');
-  unique.forEach(stop=>{
-    const b=document.createElement('button');b.type='button';b.className='smallbtn';b.style.margin='4px 4px 0 0';b.textContent=stop.name;
-    b.addEventListener('click',()=>{
-      const fromEmpty=!selected.from;
-      pick(fromEmpty?'from':'to',stops.indexOf(stop));
-      status.className='ocrstatus good';status.textContent='✓ Haltestelle übernommen. Bitte zweite Haltestelle auswählen oder nochmals scannen.';
-    });
-    box.appendChild(b);
-  });
-}
-async function scanScheduleImage(file){
-  const status=document.getElementById('ocrStatus');
-  if(!status)return;
-  status.className='ocrstatus';status.textContent='⏳ Foto wird vorbereitet …';
-  try{
-    if(!window.Tesseract)throw new Error('OCR-Modul konnte nicht geladen werden.');
-    const variants=[await preprocessOcrImage(file,'contrast'),await preprocessOcrImage(file,'threshold')];
-    let allText='',candidates=[];
-    for(let i=0;i<variants.length;i++){
-      const result=await recognizeOcr(variants[i],i===0?6:11,status);
-      const text=result?.data?.text||'';allText+='\n'+text;
-      candidates=findStopFromOCR(allText);
-      if(candidates.length>=2)break;
-    }
-    console.log('Ruf:Zu OCR-Text:',allText);
-    const from=candidates[0]||null;
-    const to=candidates.find(s=>!from||stopCode(s)!==stopCode(from))||null;
-    if(from)pick('from',stops.indexOf(from));
-    if(to)pick('to',stops.indexOf(to));
-    const dt=document.getElementById('departTime'),at=document.getElementById('arriveTime');
-    const times=findTimes(allText);if(dt&&times[0])dt.value=times[0];if(at&&times[1])at.value=times[1];
-    const board=document.getElementById('boardCount'),alight=document.getElementById('alightCount');
-    const pc=findPassengerNumbers(allText);if(board&&pc.board!==null)board.value=pc.board;if(alight&&pc.alight!==null)alight.value=pc.alight;
-    const found=[];if(from)found.push('Von');if(to)found.push('Nach');if(times.length)found.push('Zeiten');if(pc.board!==null||pc.alight!==null)found.push('Ein-/Ausstieg');
-    if(found.length){
-      status.className='ocrstatus good';status.textContent='✓ Erkannt: '+found.join(', ')+'. Bitte kurz kontrollieren und danach berechnen.';
-    }else{
-      showOcrCandidates(candidates);
-    }
-  }catch(e){
-    console.error('Ruf:Zu OCR-Fehler',e);
-    status.className='ocrstatus warn';status.textContent='Foto konnte nicht automatisch gelesen werden. Bitte Foto näher/gerader aufnehmen oder händisch auswählen.';
-  }
-}
+function findPassengerNumbers(text){const t=String(text||''),up=t.toUpperCase();const nums=[...t.matchAll(/\b(\d{1,2})\b/g)].map(m=>Number(m[1])).filter(n=>n<=99);let board=null,alight=null;const bm=up.match(/(?:EINSTEIG|EINSTIEG|ZUSTIEG|ABHOL|↑)\D{0,12}(\d{1,2})/i);const am=up.match(/(?:AUSSTEIG|AUSSTIEG|ABGANG|↓)\D{0,12}(\d{1,2})/i);if(bm)board=Number(bm[1]);if(am)alight=Number(am[1]);if(board===null&&nums.length>=2)board=nums[0];if(alight===null&&nums.length>=2)alight=nums[1];return {board,alight};}
+function preprocessOcrImage(file,mode){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{const maxWidth=2800;const scale=Math.min(3,Math.max(1,maxWidth/img.naturalWidth));const w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);const data=ctx.getImageData(0,0,w,h),p=data.data;for(let i=0;i<p.length;i+=4){let g=.299*p[i]+.587*p[i+1]+.114*p[i+2];if(mode==='threshold')g=g>160?255:0;else if(mode==='strong')g=Math.max(0,Math.min(255,(g-128)*1.9+128));else g=Math.max(0,Math.min(255,(g-128)*1.35+128));p[i]=p[i+1]=p[i+2]=g;}ctx.putImageData(data,0,0);resolve(canvas);URL.revokeObjectURL(img.src);};img.onerror=()=>reject(new Error('Bild konnte nicht verarbeitet werden'));img.src=URL.createObjectURL(file);});}
+async function recognizeOcr(image,psm,status){return Tesseract.recognize(image,'deu+eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)status.textContent='⏳ Text wird erkannt … '+Math.round(m.progress*100)+' %';},config:{tessedit_pageseg_mode:String(psm),preserve_interword_spaces:'1'}});}
+function showOcrCandidates(candidates){const status=document.getElementById('ocrStatus');if(!status)return;const unique=[];for(const c of candidates||[]){if(c&&!unique.some(x=>stopCode(x)===stopCode(c)))unique.push(c);if(unique.length>=8)break;}if(!unique.length){status.className='ocrstatus warn';status.textContent='Keine Haltestelle sicher erkannt. Bitte Foto näher, gerade und gut beleuchtet aufnehmen oder händisch auswählen.';return;}status.className='ocrstatus warn';status.innerHTML='<b>Mögliche Haltestellen:</b><div class="ocrchoices"></div><div style="margin-top:6px">Bitte richtige Haltestelle antippen. Danach den Scanner für die zweite Haltestelle nochmals verwenden.</div>';const box=status.querySelector('.ocrchoices');unique.forEach(stop=>{const b=document.createElement('button');b.type='button';b.className='smallbtn';b.style.margin='4px 4px 0 0';b.textContent=stop.name;b.addEventListener('click',()=>{const id=selected.from?'to':'from';pick(id,stops.indexOf(stop));status.className='ocrstatus good';status.textContent='✓ Haltestelle übernommen. Bitte zweite Haltestelle auswählen oder nochmals scannen.';});box.appendChild(b);});}
+async function scanScheduleImage(file){const status=document.getElementById('ocrStatus');if(!status)return;status.className='ocrstatus';status.textContent='⏳ Fahrplan wird vorbereitet …';try{if(!window.Tesseract)throw new Error('OCR-Modul konnte nicht geladen werden.');const variants=[await preprocessOcrImage(file,'contrast'),await preprocessOcrImage(file,'strong'),await preprocessOcrImage(file,'threshold')];let allText='',candidates=[];const psms=[6,11,4];for(let i=0;i<variants.length;i++){const result=await recognizeOcr(variants[i],psms[i],status);const text=result?.data?.text||'';allText+='\n'+text;candidates=findStopFromOCR(allText);if(candidates.length>=2)break;}console.log('Ruf:Zu OCR-Text:',allText);const from=candidates[0]||null;const to=candidates.find(s=>!from||stopCode(s)!==stopCode(from))||null;if(from)pick(selected.from?'to':'from',stops.indexOf(from));if(to){if(selected.from&&stopCode(selected.from)!==stopCode(to))pick('to',stops.indexOf(to));else if(!selected.from)pick('from',stops.indexOf(to));}const dt=document.getElementById('departTime'),at=document.getElementById('arriveTime');const times=findTimes(allText);if(dt&&times[0])dt.value=times[0];if(at&&times[1])at.value=times[1];const board=document.getElementById('boardCount'),alight=document.getElementById('alightCount');const pc=findPassengerNumbers(allText);if(board&&pc.board!==null)board.value=pc.board;if(alight&&pc.alight!==null)alight.value=pc.alight;const found=[];if(from)found.push(selected.from?'Nach':'Von');if(to)found.push('Nach');if(times.length&&dt)found.push('Zeiten');if((pc.board!==null||pc.alight!==null)&&board)found.push('Ein-/Ausstieg');if(found.length){status.className='ocrstatus good';status.textContent='✓ Erkannt: '+[...new Set(found)].join(', ')+'. Bitte kurz kontrollieren und danach berechnen.';}else showOcrCandidates(candidates);}catch(e){console.error('Ruf:Zu OCR-Fehler',e);status.className='ocrstatus warn';status.textContent='Foto konnte nicht automatisch gelesen werden. Bitte Foto näher/gerader aufnehmen oder Haltestelle händisch auswählen.';}}
+
 document.getElementById('scanBtn')?.addEventListener('click',()=>document.getElementById('scanInput')?.click());
 document.getElementById('scanInput')?.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)scanScheduleImage(f);e.target.value='';});
 
