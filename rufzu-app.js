@@ -145,92 +145,117 @@ function openOfficial(){const a=selected.from,b=selected.to;const text=a&&b?`Von
 // OCR
 const scanBtn=document.getElementById('scanBtn'),scanInput=document.getElementById('scanInput'),ocrStatus=document.getElementById('ocrStatus');
 document.getElementById('manualBtn').addEventListener('click',()=>document.getElementById('from').focus());scanBtn.addEventListener('click',()=>scanInput.click());scanInput.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;await scanTimetable(file);scanInput.value=''})
-function norm(s){return String(s||'').toUpperCase().replace(/[–—−]/g,'-').replace(/0(?=[A-Z])/g,'O').replace(/\s+/g,' ').trim()}
-function compact(s){return norm(s).replace(/[^A-Z0-9ÄÖÜ]/g,'')}
-function codeDistance(a,b){
-  a=String(a||'');b=String(b||'');
-  const d=Array.from({length:a.length+1},()=>Array(b.length+1).fill(0));
-  for(let i=0;i<=a.length;i++)d[i][0]=i;
-  for(let j=0;j<=b.length;j++)d[0][j]=j;
-  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
-  return d[a.length][b.length];
+function norm(s){
+  return String(s||'').toUpperCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[–—−]/g,'-').replace(/\\s+/g,' ').trim()
 }
+function compact(s){return norm(s).replace(/[^A-Z0-9]/g,'')}
+function levenshtein(a,b){
+  a=String(a||'');b=String(b||'');
+  if(a===b)return 0;if(!a)return b.length;if(!b)return a.length;
+  let prev=Array.from({length:b.length+1},(_,i)=>i);
+  for(let i=1;i<=a.length;i++){
+    const cur=[i];
+    for(let j=1;j<=b.length;j++)cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    prev=cur;
+  }
+  return prev[b.length]
+}
+function codeDistance(a,b){return levenshtein(a,b)}
 const OCR_CODES=stops.map(s=>({code:stopCode(s),stop:s})).filter(x=>x.code);
 function normalizeOcrCode(raw){
-  let r=String(raw||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  let r=compact(raw);
   if(r.length!==5)return null;
-  // OCR frequently turns 0/O, 1/I/L, 5/S, 8/B into each other.
-  r=r[0]+r[1].replace(/[0OQ]/g,'O')+r.slice(2).replace(/[OQD]/g,'0').replace(/[IL]/g,'1').replace(/S/g,'5').replace(/B/g,'8');
-  return r;
+  // Typische Tesseract-Verwechslungen bei Haltestellencodes.
+  r=r[0]+r[1].replace(/[OQD]/g,'0').replace(/[IL]/g,'1').replace(/S/g,'5').replace(/B/g,'8')+r.slice(2).replace(/[OQD]/g,'0').replace(/[IL]/g,'1').replace(/S/g,'5').replace(/B/g,'8');
+  return r
 }
 function resolveOcrCode(raw){
   const r=normalizeOcrCode(raw);if(!r)return null;
   let best=null,bd=99;
   for(const item of OCR_CODES){
-    const c=item.code;
-    let d=codeDistance(r,c);
+    const c=item.code;let d=codeDistance(r,c);
     if(r.slice(0,2)===c.slice(0,2))d=Math.max(0,d-1);
     if(d<bd){bd=d;best=item.stop}
   }
-  return bd<=1?best:null;
+  return bd<=1?best:null
 }
-function extractOcrStops(text){
-  const t=norm(text), compactText=compact(t), found=[];
-  // First: find explicit code-shaped OCR fragments, including missing/extra spaces or hyphens.
-  const raw=[...t.matchAll(/\b[A-Z0-9]{2}\s*[-.:]?\s*[A-Z0-9]{3}\b/g)].map(m=>m[0]);
-  for(const r of raw){const hit=resolveOcrCode(r);if(hit&&!found.some(s=>stopCode(s)===stopCode(hit)))found.push(hit)}
-  // Second: compare every known stop code against the compact OCR text. This catches
-  // cases where Tesseract reads e.g. "SV 104" or "SVI04" instead of "SV104".
-  if(found.length<2){
-    const scored=[];
-    for(const item of OCR_CODES){
-      const c=item.code, idx=compactText.indexOf(c);
-      if(idx>=0) scored.push({stop:item.stop,score:1000-idx});
-      else {
-        // Compare against every 5-character window near code-like text.
-        let best=99;
-        for(let i=0;i<=compactText.length-5;i++)best=Math.min(best,codeDistance(compactText.slice(i,i+5),c));
-        if(best<=1)scored.push({stop:item.stop,score:700-best*50});
-      }
-    }
-    scored.sort((a,b)=>b.score-a.score);
-    for(const x of scored){if(!found.some(s=>stopCode(s)===stopCode(x.stop)))found.push(x.stop);if(found.length>=2)break}
+function tokenScore(a,b){
+  const aa=norm(a).split(/[^A-Z0-9]+/).filter(w=>w.length>=3),bb=norm(b).split(/[^A-Z0-9]+/).filter(w=>w.length>=3);
+  let score=0;
+  for(const x of aa){
+    let best=0;
+    for(const y of bb){const d=levenshtein(x,y),m=Math.max(x.length,y.length);const sim=1-d/m;if(sim>best)best=sim}
+    if(best>=0.72)score+=best*(x.length>=6?3:2);
   }
-  return found.slice(0,2);
-}
-function nameScore(text,stop){
-  const t=compact(text), code=stopCode(stop);
-  if(code&&t.includes(code))return 1000;
-  const n=compact(stop.name.replace(/^[A-Z]{2}\d{3}/,''));
-  if(n&&t.includes(n))return 900;
-  const words=norm(stop.name.replace(/^[A-Z]{2}\d{3}\s*-\s*/,'')).split(/[^A-ZÄÖÜ0-9]+/).filter(w=>w.length>=4);
-  let score=0;for(const w of words)if(t.includes(compact(w)))score+=Math.min(30,w.length*3);
   return score;
 }
-function findStopByCode(code){return code?stops.find(s=>stopCode(s)===code)||null:null}
-function findStopInText(text,codeHint){
-  if(codeHint){const hit=findStopByCode(stopCode(codeHint));if(hit)return hit}
-  let best=null,score=0;for(const s of stops){const sc=nameScore(text,s);if(sc>score){score=sc;best=s}}
-  return score>=15?best:null;
+function stopNameForMatch(stop){return String(stop.name||'').replace(/^[A-Z]{2}\d{3}\s*[-.:]?\s*/i,'')}
+function scoreStopAgainstText(text,stop){
+  const t=norm(text),tc=compact(t),code=stopCode(stop),cc=compact(code),name=stopNameForMatch(stop),nc=compact(name);
+  let score=0;
+  if(cc&&tc.includes(cc))score+=1000;
+  // Code with spaces/hyphen or one OCR character wrong.
+  const codeWindows=[];
+  for(let i=0;i<=Math.max(0,tc.length-5);i++)codeWindows.push(tc.slice(i,i+5));
+  if(cc&&codeWindows.length){const d=Math.min(...codeWindows.map(w=>levenshtein(w,cc)));if(d===1)score+=650;}
+  if(nc&&tc.includes(nc))score+=500;
+  const words=norm(name).split(/[^A-Z0-9]+/).filter(w=>w.length>=4);
+  for(const w of words){if(tc.includes(compact(w)))score+=Math.min(120,w.length*10)}
+  score+=tokenScore(t,name)*25;
+  return score;
+}
+function extractOcrStops(text){
+  const t=norm(text),compactText=compact(t),found=[];
+  const raw=[...t.matchAll(/\\b[A-Z0-9]{2}\\s*[-.:]?\\s*[A-Z0-9]{3}\\b/g)].map(m=>m[0]);
+  for(const r of raw){const hit=resolveOcrCode(r);if(hit&&!found.some(s=>stopCode(s)===stopCode(hit)))found.push(hit)}
+  const scored=stops.map(stop=>({stop,score:scoreStopAgainstText(t,stop)})).filter(x=>x.score>=80).sort((a,b)=>b.score-a.score);
+  for(const x of scored){if(!found.some(s=>stopCode(s)===stopCode(x.stop)))found.push(x.stop);if(found.length>=2)break}
+  return found.slice(0,2)
+}
+function preprocessForOcr(file){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();img.onload=()=>{
+      const scale=Math.min(2.5,1800/Math.max(img.width,img.height));
+      const c=document.createElement('canvas');c.width=Math.round(img.width*scale);c.height=Math.round(img.height*scale);
+      const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,c.width,c.height);
+      const d=ctx.getImageData(0,0,c.width,c.height),p=d.data;
+      for(let i=0;i<p.length;i+=4){const g=0.299*p[i]+0.587*p[i+1]+0.114*p[i+2];const v=g>165?255:(g<105?0:g);p[i]=p[i+1]=p[i+2]=v}
+      ctx.putImageData(d,0,0);c.toBlob(b=>b?resolve(b):reject(new Error('Bildverarbeitung fehlgeschlagen')),'image/jpeg',0.92)
+    };img.onerror=reject;img.src=URL.createObjectURL(file)
+  })
+}
+async function runOcr(file){
+  const texts=[];
+  for(const source of [file,await preprocessForOcr(file)]){
+    try{
+      const r=await Tesseract.recognize(source,'deu+eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)ocrStatus.textContent=`OCR liest das Foto … ${Math.round(m.progress*100)} %`}});
+      if(r?.data?.text)texts.push(r.data.text)
+    }catch(e){console.warn('OCR-Durchlauf fehlgeschlagen',e)}
+  }
+  return texts.join('\n')
 }
 async function scanTimetable(file){
   if(!window.Tesseract){ocrStatus.textContent='OCR-Bibliothek konnte nicht geladen werden. Bitte händisch eingeben.';ocrStatus.className='ocrstatus warn';return}
   ocrStatus.textContent='📷 Foto wird gelesen …';ocrStatus.className='ocrstatus';
   try{
-    const {data}=await Tesseract.recognize(file,'deu+eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)ocrStatus.textContent=`OCR liest das Foto … ${Math.round(m.progress*100)} %`}});
-    const text=data.text||'';console.log('Ruf:Zu OCR-Text:',text);
+    const text=await runOcr(file);console.log('Ruf:Zu OCR-Text:',text);
     const lines=text.split(/\r?\n/).map(norm).filter(Boolean);
     let hits=extractOcrStops(text);
-    // Prefer stops found on separate timetable lines, in reading order.
-    const lineHits=[];for(const line of lines){const h=findStopInText(line);if(h&&!lineHits.some(s=>stopCode(s)===stopCode(h)))lineHits.push(h)}
+    // Zusätzlich jede einzelne Zeile gegen alle 536 Haltestellennamen prüfen.
+    const lineHits=[];
+    for(const line of lines){
+      let best=null,bs=0;
+      for(const s of stops){const sc=scoreStopAgainstText(line,s);if(sc>bs){bs=sc;best=s}}
+      if(best&&bs>=80&&!lineHits.some(s=>stopCode(s)===stopCode(best)))lineHits.push(best);
+    }
     for(const h of lineHits){if(!hits.some(s=>stopCode(s)===stopCode(h)))hits.push(h);if(hits.length>=2)break}
-    const from=hits[0]||null, to=hits.find(s=>!from||stopCode(s)!==stopCode(from))||null;
+    const from=hits[0]||null,to=hits.find(s=>!from||stopCode(s)!==stopCode(from))||null;
     let filled=0;
     if(from){selected.from=from;document.getElementById('from').value=from.name;document.getElementById('fromSug').hidden=true;filled++}
     if(to){selected.to=to;document.getElementById('to').value=to.name;document.getElementById('toSug').hidden=true;filled++}
     if(filled===2){ocrStatus.textContent=`✓ Erkannt: ${from.name} → ${to.name}. Bitte kontrollieren und danach berechnen.`;ocrStatus.className='ocrstatus good'}
     else if(filled===1){ocrStatus.textContent=`✓ ${from?.name||to?.name} erkannt. Das zweite Feld bitte kurz händisch auswählen.`;ocrStatus.className='ocrstatus warn'}
-    else{ocrStatus.textContent='Foto wurde gelesen, aber keine Haltestellen erkannt. OCR-Text wurde technisch ausgelesen – bitte nochmals fotografieren oder händisch auswählen.';ocrStatus.className='ocrstatus warn'}
+    else{ocrStatus.textContent='Foto wurde gelesen, aber keine passende Haltestelle erkannt. Bitte Fahrplan vollständig und möglichst gerade fotografieren.';ocrStatus.className='ocrstatus warn'}
   }catch(e){console.error(e);ocrStatus.textContent='OCR konnte das Foto nicht lesen. Bitte Felder händisch eingeben.';ocrStatus.className='ocrstatus warn'}
 }
 document.getElementById('officialBtn').addEventListener('click',openOfficial);
