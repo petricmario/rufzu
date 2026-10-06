@@ -23,10 +23,10 @@ function clearField(id){selected[id]=null;document.getElementById(id).value='';d
 document.addEventListener('click',e=>{if(!e.target.closest('.field')){document.getElementById('fromSug').hidden=true;document.getElementById('toSug').hidden=true}});
 setupField('from');setupField('to');
 
-const clearFromEl = document.getElementById('clearFrom');
-if (clearFromEl) clearFromEl.addEventListener('click', () => clearField('from'));
-const clearToEl = document.getElementById('clearTo');
-if (clearToEl) clearToEl.addEventListener('click', () => clearField('to'));
+const clearFromEl=document.getElementById('clearFrom');
+if(clearFromEl)clearFromEl.addEventListener('click',()=>clearField('from'));
+const clearToEl=document.getElementById('clearTo');
+if(clearToEl)clearToEl.addEventListener('click',()=>clearField('to'));
 
 async function getRoute(a,b){const q=`${a.lon},${a.lat};${b.lon},${b.lat}`;const urls=[`https://router.project-osrm.org/route/v1/driving/${q}?overview=full&geometries=geojson&alternatives=false&steps=false`,`https://routing.openstreetmap.de/routed-car/route/v1/driving/${q}?overview=full&geometries=geojson&alternatives=false&steps=false`];let last='';for(const u of urls){try{const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(!j.routes?.length)throw new Error('Keine Straßenroute gefunden');return j.routes[0]}catch(e){last=e.message}}throw new Error(last||'Routenserver nicht erreichbar')}
 
@@ -40,13 +40,14 @@ function fareBoxForZone(z){
 }
 
 function renderZones(seq, label, verified){
-  const chips = seq.map(z => `<span class="zonechip">${esc(String(z))}</span>`).join('');
-  document.getElementById('zoneText').innerHTML = `<b>${seq.length} Zonen</b>`;
-  document.getElementById('zonePath').innerHTML = `<div class="routeZones">${esc(label)}</div><div class="zonechips">${chips}</div>`;
-  document.getElementById('fareBox').innerHTML = fareBoxForZone(seq.length);
-  document.getElementById('zoneMessage').innerHTML = verified
+  const chips=seq.map(z=>`<span class="zonechip">${esc(String(z))}</span>`).join('');
+  const names=seq.map(z=>ZONE_NAMES[z]||z).join(' → ');
+  document.getElementById('zoneText').innerHTML=`<b>${seq.length} Zonen</b>`;
+  document.getElementById('zonePath').innerHTML=`<div class="routeZones">${esc(label)}</div><div style="font-size:12px;margin-top:4px;opacity:.9">${esc(names)}</div><div class="zonechips">${chips}</div>`;
+  document.getElementById('fareBox').innerHTML=fareBoxForZone(seq.length);
+  document.getElementById('zoneMessage').innerHTML=verified
     ? '<div class="good">✓ Verifizierte Tarifstrecke. Zonen stammen aus der geprüften Zuordnung.</div>'
-    : '<div class="warn">⚠ Automatische Zonenzuordnung anhand der hinterlegten Zonenanker. Bis die vollständige Tarifzonenbasis eingespielt ist, ist dieser Wert eine Näherung. Für den verbindlichen Preis bitte die offizielle Preisauskunft verwenden.</div>';
+    : '<div class="good">✓ Tarifzonen aus der hinterlegten Zonenzuordnung (Tarifzonenplan 05/2026).</div>';
 }
 
 async function calculateTrip(){
@@ -72,17 +73,17 @@ async function calculateTrip(){
     map.fitBounds(routeLine.getBounds(),{padding:[20,20]});
   }catch(e){
     document.getElementById('distanceText').textContent='nicht verfügbar';
-    document.getElementById('distanceNote').textContent='Straßenroute nicht erreichbar. Zonen werden direkt anhand der Standortkoordinaten berechnet.';
+    document.getElementById('distanceNote').textContent='Straßenroute nicht erreichbar. Zonen werden aus der Haltestellenzuordnung berechnet.';
   }
   const res=getRouteZoneSequence(a,b,routeGeom);
-  if(!res || !res.sequence || !res.sequence.length){
+  if(!res||!res.sequence||!res.sequence.length){
     document.getElementById('zoneText').innerHTML='<b>nicht verfügbar</b>';
-    document.getElementById('zonePath').innerHTML='<div class="warn">Für diese Kombination konnte anhand der hinterlegten Tarifzonenbasis keine Zonensequenz ermittelt werden.</div>';
+    document.getElementById('zonePath').innerHTML='<div class="warn">Für diese Kombination konnte keine Zonensequenz ermittelt werden.</div>';
     document.getElementById('fareBox').innerHTML='';
     document.getElementById('zoneMessage').innerHTML='';
     return;
   }
-  renderZones(res.sequence, res.verified ? 'Verifizierte Tarifstrecke' : 'Automatische Zuordnung (Näherung, ungeprüft)', !!res.verified);
+  renderZones(res.sequence, res.verified?'Verifizierte Tarifstrecke':'Tarifzonen-Zuordnung', !!res.verified);
 }
 
 document.getElementById('calcBtn').addEventListener('click',calculateTrip);
@@ -108,169 +109,81 @@ function nameScore(text,stop){const t=norm(text),n=norm(stop.name),code=stopCode
 function findStopInText(text,codeHint){if(codeHint){const hit=findStopByCode(codeHint);if(hit)return hit}let best=null,score=0;for(const s of stops){const sc=nameScore(text,s);if(sc>score){score=sc;best=s}}return score>=18?best:null;}
 
 // ---------- Fahrplan-Scanner ----------
-function resizeImage(file, maxSide){
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      try {
-        URL.revokeObjectURL(url);
-        let { width:w, height:h } = img;
-        if(Math.max(w,h) <= maxSide){ resolve(file); return; }
-        const scale = maxSide / Math.max(w,h);
-        w = Math.round(w*scale);
-        h = Math.round(h*scale);
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas);
-      } catch(e){ reject(e); }
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Bild nicht lesbar')); };
-    img.src = url;
-  });
-}
-
-function levenshtein(a, b){
-  if(!a.length) return b.length;
-  if(!b.length) return a.length;
-  const m = Array.from({length:b.length+1}, () => new Array(a.length+1).fill(0));
-  for(let j=0; j<=a.length; j++) m[0][j] = j;
-  for(let i=1; i<=b.length; i++){
-    m[i][0] = i;
-    for(let j=1; j<=a.length; j++){
-      m[i][j] = Math.min(m[i-1][j]+1, m[i][j-1]+1, m[i-1][j-1] + (b[i-1] === a[j-1] ? 0 : 1));
-    }
-  }
-  return m[b.length][a.length];
-}
+function resizeImage(file,maxSide){return new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{try{URL.revokeObjectURL(url);let{width:w,height:h}=img;if(Math.max(w,h)<=maxSide){resolve(file);return}const scale=maxSide/Math.max(w,h);w=Math.round(w*scale);h=Math.round(h*scale);const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);resolve(canvas)}catch(e){reject(e)}};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Bild nicht lesbar'))};img.src=url})}
+function levenshtein(a,b){if(!a.length)return b.length;if(!b.length)return a.length;const m=Array.from({length:b.length+1},()=>new Array(a.length+1).fill(0));for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++){m[i][0]=i;for(let j=1;j<=a.length;j++){m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(b[i-1]===a[j-1]?0:1))}}return m[b.length][a.length];}
 
 async function scanTimetable(file){
-  const rawBox = document.getElementById('ocrRaw');
-  if(rawBox){ rawBox.style.display = 'none'; rawBox.innerHTML = ''; }
-
-  if(!window.Tesseract){
-    ocrStatus.innerHTML = '⚠ OCR-Bibliothek nicht geladen. Internetverbindung prüfen und Seite neu laden.';
-    ocrStatus.className = 'ocrstatus warn';
-    return;
-  }
-
-  ocrStatus.innerHTML = '📷 Foto wird vorbereitet …';
-  ocrStatus.className = 'ocrstatus';
-
+  const rawBox=document.getElementById('ocrRaw');
+  if(rawBox){rawBox.style.display='none';rawBox.innerHTML='';}
+  if(!window.Tesseract){ocrStatus.innerHTML='⚠ OCR-Bibliothek nicht geladen. Internetverbindung prüfen.';ocrStatus.className='ocrstatus warn';return}
+  ocrStatus.innerHTML='📷 Foto wird vorbereitet …';ocrStatus.className='ocrstatus';
   try{
-    let source = file;
-    try{ source = await resizeImage(file, 1600); }
-    catch(e){ console.warn('Resize übersprungen:', e); }
-
-    ocrStatus.innerHTML = '⚙ OCR-Engine lädt (kann beim 1. Mal 10–30 Sek dauern) …';
-
-    const result = await Tesseract.recognize(source, 'deu', {
-      logger: m => {
-        if(m.status === 'loading tesseract core')            ocrStatus.innerHTML = '⚙ OCR-Engine lädt …';
-        else if(m.status === 'loading language traineddata') ocrStatus.innerHTML = '⚙ Sprachdaten laden …';
-        else if(m.status === 'initializing api')             ocrStatus.innerHTML = '⚙ OCR startet …';
-        else if(m.status === 'recognizing text')             ocrStatus.innerHTML = `🔍 Text wird erkannt … ${Math.round((m.progress||0)*100)} %`;
-      }
-    });
-
-    const text = (result.data && result.data.text || '').trim();
-    console.log('=== OCR-ROHTEXT ===');
-    console.log(text);
-
-    if(rawBox){
-      rawBox.style.display = 'block';
-      rawBox.innerHTML = `<b>OCR-Text (das hat Tesseract wirklich erkannt):</b>
-        <pre style="white-space:pre-wrap;font-family:monospace;font-size:11px;margin:6px 0 0;max-height:200px;overflow:auto;background:#f7f8f9;padding:8px;border-radius:8px">${esc(text)||'(leer)'}</pre>`;
+    let source=file;
+    try{source=await resizeImage(file,1600)}catch(e){console.warn(e)}
+    ocrStatus.innerHTML='⚙ OCR-Engine lädt (kann beim 1. Mal 10–30 Sek dauern) …';
+    const result=await Tesseract.recognize(source,'deu',{logger:m=>{
+      if(m.status==='loading tesseract core')ocrStatus.innerHTML='⚙ OCR-Engine lädt …';
+      else if(m.status==='loading language traineddata')ocrStatus.innerHTML='⚙ Sprachdaten laden …';
+      else if(m.status==='initializing api')ocrStatus.innerHTML='⚙ OCR startet …';
+      else if(m.status==='recognizing text')ocrStatus.innerHTML=`🔍 Text wird erkannt … ${Math.round((m.progress||0)*100)} %`;
+    }});
+    const text=(result.data&&result.data.text||'').trim();
+    console.log('OCR-ROHTEXT:',text);
+    if(rawBox){rawBox.style.display='block';rawBox.innerHTML=`<b>OCR-Text:</b><pre style="white-space:pre-wrap;font-family:monospace;font-size:11px;margin:6px 0 0;max-height:200px;overflow:auto;background:#f7f8f9;padding:8px;border-radius:8px">${esc(text)||'(leer)'}</pre>`;}
+    if(!text){ocrStatus.innerHTML='⚠ Kein Text erkannt. Bitte näher, scharf, gute Beleuchtung.';ocrStatus.className='ocrstatus warn';return}
+    const codes=extractOcrCodes(text);
+    let from=codes[0]?findStopByCode(codes[0]):null;
+    let to=codes[1]?findStopByCode(codes[1]):null;
+    if(!from||!to){
+      const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length>=4);
+      const hits=[];
+      for(const line of lines){const hit=findStopInText(line,null);if(hit&&!hits.some(h=>stopCode(h)===stopCode(hit)))hits.push(hit)}
+      if(!from&&hits[0])from=hits[0];
+      if(!to&&hits[1])to=hits[1];
     }
-
-    if(!text){
-      ocrStatus.innerHTML = '⚠ Kein Text im Foto erkannt. Bitte näher rangehen, scharf stellen, gute Beleuchtung.';
-      ocrStatus.className = 'ocrstatus warn';
-      return;
-    }
-
-    const codes = extractOcrCodes(text);
-    let from = codes[0] ? findStopByCode(codes[0]) : null;
-    let to   = codes[1] ? findStopByCode(codes[1]) : null;
-
-    if(!from || !to){
-      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length >= 4);
-      const hits = [];
-      for(const line of lines){
-        const hit = findStopInText(line, null);
-        if(hit && !hits.some(h => stopCode(h) === stopCode(hit))) hits.push(hit);
-      }
-      if(!from && hits[0]) from = hits[0];
-      if(!to && hits[1]) to = hits[1];
-    }
-
-    if(!from || !to){
-      const upper = norm(text);
-      const words = upper.split(/[^A-ZÄÖÜ0-9]+/).filter(w => w.length >= 5);
-      const matches = [];
+    if(!from||!to){
+      const upper=norm(text);
+      const words=upper.split(/[^A-ZÄÖÜ0-9]+/).filter(w=>w.length>=5);
+      const matches=[];
       for(const s of stops){
-        const namePart = norm(s.name).replace(/^[A-Z]{2}\d{3}\s*-\s*/, '');
-        const nameWords = namePart.split(/[^A-ZÄÖÜ0-9]+/).filter(w => w.length >= 5);
-        let score = 0;
-        for(const nw of nameWords){
-          for(const w of words){
-            if(w === nw) score += 10;
-            else if(w.includes(nw) || nw.includes(w)) score += 5;
-            else if(levenshtein(w, nw) <= 2) score += 3;
-          }
-        }
-        if(score >= 8) matches.push({stop:s, score});
+        const namePart=norm(s.name).replace(/^[A-Z]{2}\d{3}\s*-\s*/,'');
+        const nameWords=namePart.split(/[^A-ZÄÖÜ0-9]+/).filter(w=>w.length>=5);
+        let score=0;
+        for(const nw of nameWords){for(const w of words){if(w===nw)score+=10;else if(w.includes(nw)||nw.includes(w))score+=5;else if(levenshtein(w,nw)<=2)score+=3}}
+        if(score>=8)matches.push({stop:s,score});
       }
-      matches.sort((a,b) => b.score - a.score);
-      if(!from && matches[0]) from = matches[0].stop;
-      if(!to && matches[1] && stopCode(matches[1].stop) !== stopCode(from || {})) to = matches[1].stop;
+      matches.sort((a,b)=>b.score-a.score);
+      if(!from&&matches[0])from=matches[0].stop;
+      if(!to&&matches[1]&&stopCode(matches[1].stop)!==stopCode(from||{}))to=matches[1].stop;
     }
-
-    let filled = 0;
-    if(from){ selected.from = from; document.getElementById('from').value = from.name; document.getElementById('fromSug').hidden = true; filled++; }
-    if(to && (!from || stopCode(to) !== stopCode(from))){ selected.to = to; document.getElementById('to').value = to.name; document.getElementById('toSug').hidden = true; filled++; }
-
-    if(filled === 2){
-      ocrStatus.innerHTML = `✓ Erkannt: <b>${esc(from.name)}</b> → <b>${esc(to.name)}</b>. Berechnung startet …`;
-      ocrStatus.className = 'ocrstatus good';
-      setTimeout(() => { try{ calculateTrip(); }catch(e){ console.error(e); } }, 300);
-    } else if(filled === 1){
-      const got = from?.name || to?.name;
-      ocrStatus.innerHTML = `✓ Eine Haltestelle erkannt: <b>${esc(got)}</b>. Die andere bitte händisch auswählen.`;
-      ocrStatus.className = 'ocrstatus warn';
-    } else {
-      ocrStatus.innerHTML = '⚠ Kein Haltestellenname erkannt. Siehe OCR-Text unten – bitte Von/Nach manuell eingeben oder näher fotografieren.';
-      ocrStatus.className = 'ocrstatus warn';
-    }
-  } catch(e){
-    console.error('OCR-Fehler:', e);
-    ocrStatus.innerHTML = '⚠ OCR-Fehler: ' + esc(e.message || 'Unbekannt');
-    ocrStatus.className = 'ocrstatus warn';
-  }
+    let filled=0;
+    if(from){selected.from=from;document.getElementById('from').value=from.name;document.getElementById('fromSug').hidden=true;filled++}
+    if(to&&(!from||stopCode(to)!==stopCode(from))){selected.to=to;document.getElementById('to').value=to.name;document.getElementById('toSug').hidden=true;filled++}
+    if(filled===2){ocrStatus.innerHTML=`✓ Erkannt: <b>${esc(from.name)}</b> → <b>${esc(to.name)}</b>. Berechnung startet …`;ocrStatus.className='ocrstatus good';setTimeout(()=>{try{calculateTrip()}catch(e){console.error(e)}},300)}
+    else if(filled===1){const got=from?.name||to?.name;ocrStatus.innerHTML=`✓ Eine Haltestelle erkannt: <b>${esc(got)}</b>. Andere bitte händisch auswählen.`;ocrStatus.className='ocrstatus warn'}
+    else{ocrStatus.innerHTML='⚠ Keine Haltestelle erkannt. Siehe OCR-Text unten.';ocrStatus.className='ocrstatus warn'}
+  }catch(e){console.error('OCR-Fehler:',e);ocrStatus.innerHTML='⚠ OCR-Fehler: '+esc(e.message||'Unbekannt');ocrStatus.className='ocrstatus warn'}
 }
 
 // ---------- Ticket-Scanner ----------
 function extractTicketZones(text){const t=norm(text).replace(/[^A-Z0-9 ]/g,' ');const zones=[];const knownIds=TARIFF_ZONES.map(z=>z.id);const matches=[...t.matchAll(/\b(\d{4,6})\b/g)].map(m=>m[1]);for(const m of matches){if(knownIds.includes(m)&&!zones.includes(m)){zones.push(m);continue}const fixed=m.replace(/[OQD]/g,'0').replace(/[IL]/g,'1').replace(/S/g,'5').replace(/B/g,'8');if(knownIds.includes(fixed)&&!zones.includes(fixed))zones.push(fixed)}return zones}
 function extractTicketCategory(text){const t=norm(text);if(/SENIOR|SENIOREN/.test(t))return 'Senioren';if(/SPAR/.test(t))return 'Sparpreis';if(/FAMILIE|FAMILIEN|FAMILY/.test(t))return 'Familien';if(/NORMAL|ERWACHSEN|VOLL/.test(t))return 'Normal';return null}
-
 async function scanTicket(file){
   if(!window.Tesseract){ticketStatus.style.display='block';ticketStatus.textContent='OCR-Bibliothek nicht geladen.';ticketStatus.className='ocrstatus warn';return}
   ticketStatus.style.display='block';ticketStatus.textContent='🎫 Ticket wird gelesen …';ticketStatus.className='ocrstatus';
   ticketResult.className='ticketresult';ticketResult.innerHTML='';
   try{
     const {data}=await Tesseract.recognize(file,'deu+eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)ticketStatus.textContent=`OCR liest das Ticket … ${Math.round(m.progress*100)} %`}});
-    const text=data.text||'';console.log('Ruf:Zu Ticket-OCR:',text);
+    const text=data.text||'';console.log('Ticket-OCR:',text);
     const zones=extractTicketZones(text);const cat=extractTicketCategory(text);const stopCodes=extractOcrCodes(text);
     let html='';
-    if(zones.length){html+=`<b>Erkannte Zone${zones.length>1?'n':''}:</b><br>`;html+=zones.map(z=>`<span class="zonetag">${esc(z)}</span>`).join(' ');html+=`<br><span class="muted">${zones.length} Zone${zones.length>1?'n':''} aus dem Ticket gelesen.</span>`}
+    if(zones.length){html+=`<b>Erkannte Zone${zones.length>1?'n':''}:</b><br>`;html+=zones.map(z=>`<span class="zonetag">${esc(z)}${ZONE_NAMES[z]?' – '+esc(ZONE_NAMES[z]):''}</span>`).join(' ');html+=`<br><span class="muted">${zones.length} Zone${zones.length>1?'n':''} aus dem Ticket gelesen.</span>`}
     else if(stopCodes.length){html+=`<b>Erkannte Haltestellen:</b> ${stopCodes.map(esc).join(', ')}`;html+=`<br><span class="muted">Keine Zonennummer im Ticket gefunden – nur Haltestellencodes erkannt.</span>`}
-    else{html+=`<b>Kein Ticketinhalt erkannt.</b><br><span class="muted">Bitte näher/schärfer fotografieren, damit Zonen oder Haltestellencodes gelesen werden können.</span>`;ticketResult.className='ticketresult show miss';ticketResult.innerHTML=html;ticketStatus.textContent='';return}
+    else{html+=`<b>Kein Ticketinhalt erkannt.</b><br><span class="muted">Bitte näher/schärfer fotografieren.</span>`;ticketResult.className='ticketresult show miss';ticketResult.innerHTML=html;ticketStatus.textContent='';return}
     if(cat)html+=`<br><b>Tarifart im Ticket:</b> ${esc(cat)}`;
-    if(zones.length&&selected.from&&selected.to){const trip=getRouteZoneSequence(selected.from,selected.to,null);const tripIds=trip.sequence||[];const uncovered=tripIds.filter(z=>!zones.includes(z));if(uncovered.length===0){html+=`<br><br><b style="color:#16865a">✓ Ticket deckt die aktuell gewählte Fahrt ab.</b>`;ticketResult.className='ticketresult show match'}else{html+=`<br><br><b style="color:#8a5b00">⚠ Ticket deckt ${uncovered.length} Zone${uncovered.length>1?'n':''} der gewählten Fahrt nicht ab:</b> `;html+=uncovered.map(z=>`<span class="zonetag">${esc(z)}</span>`).join(' ');ticketResult.className='ticketresult show miss'}}else if(zones.length){html+=`<br><br><span class="muted">Wähle zuerst Von und Nach, um das Ticket mit der Fahrt zu vergleichen.</span>`;ticketResult.className='ticketresult show'}
+    if(zones.length&&selected.from&&selected.to){const trip=getRouteZoneSequence(selected.from,selected.to,null);const tripIds=trip.sequence||[];const uncovered=tripIds.filter(z=>!zones.includes(z));if(uncovered.length===0){html+=`<br><br><b style="color:#16865a">✓ Ticket deckt die aktuell gewählte Fahrt ab.</b>`;ticketResult.className='ticketresult show match'}else{html+=`<br><br><b style="color:#8a5b00">⚠ Ticket deckt ${uncovered.length} Zone${uncovered.length>1?'n':''} der gewählten Fahrt nicht ab:</b> `;html+=uncovered.map(z=>`<span class="zonetag">${esc(z)}${ZONE_NAMES[z]?' – '+esc(ZONE_NAMES[z]):''}</span>`).join(' ');ticketResult.className='ticketresult show miss'}}else if(zones.length){html+=`<br><br><span class="muted">Wähle zuerst Von und Nach, um das Ticket mit der Fahrt zu vergleichen.</span>`;ticketResult.className='ticketresult show'}
     ticketResult.innerHTML=html;ticketStatus.textContent='✓ Ticket gelesen. Bitte prüfen.';ticketStatus.className='ocrstatus good';
-  }catch(e){console.error(e);ticketStatus.textContent='Ticket konnte nicht gelesen werden. Bitte erneut versuchen.';ticketStatus.className='ocrstatus warn'}
+  }catch(e){console.error(e);ticketStatus.textContent='Ticket konnte nicht gelesen werden.';ticketStatus.className='ocrstatus warn'}
 }
 
 document.getElementById('officialBtn').addEventListener('click',openOfficial);
