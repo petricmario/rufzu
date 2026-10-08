@@ -113,6 +113,30 @@ button{cursor:pointer;border:0}
 .klimaticket-info b{color:var(--orange)}
 @media(min-width:700px){.hero{padding-left:34px;padding-right:34px}.content{padding-left:24px;padding-right:24px}.hero h1{font-size:30px}.map{height:430px}.ruf{font-size:36px}.brandmark{width:72px;height:50px}}
 @media(max-width:430px){.ruf{font-size:26px}.phone{font-size:11px}.phone .lbl{font-size:9px}.hero h1{font-size:22px}.hero{padding-top:18px}.faregrid{grid-template-columns:1fr}.resultactions,.subactions{grid-template-columns:1fr 1fr}.map{height:320px}.vehicle-photo{max-width:100%;height:150px}.scanrow{grid-template-columns:1fr}}
+
+/* === NEU: Dunkel-Orange Design mit echtem Bus-R === */
+html{background:#15181c}
+body{background:#15181c}
+.app{background:#15181c}
+.hero{background:#fff;border-bottom:4px solid #f7941e}
+.hero:after{background:#15181c}
+.content{background:transparent}
+.card{box-shadow:0 12px 35px rgba(0,0,0,.35), 0 0 0 1px rgba(247,148,30,.08); border:none}
+.brandmark{width:76px;height:52px;flex-shrink:0;display:block}
+.brandmark img{width:100%;height:100%;object-fit:contain;display:block}
+.locbtn{width:100%;min-height:42px;border:1px dashed #f7941e;background:#2a2f36;border-radius:12px;font-weight:800;color:#ffb24d;font-size:12.5px;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:6px}
+.locbtn:active{background:#3a414b}
+.locstatus{font-size:11.5px;color:#4ade80;font-weight:700;margin-top:6px;display:none;line-height:1.4}
+.locstatus.show{display:block}
+.locstatus.warn{color:#fbbf24}
+.androidbtn{width:100%;min-height:56px;border-radius:14px;background:#0f9d58;color:#fff;font-weight:900;letter-spacing:.3px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;box-shadow:0 8px 20px rgba(15,157,88,.35)}
+.androidbtn:active{transform:translateY(1px)}
+.androidbtn:disabled{opacity:.5}
+.vehicle-hero{border:1px solid rgba(247,148,30,.15)}
+.vehicle-photo{border-radius:16px;overflow:hidden}
+.footer{color:#8a939c}
+.footer a{color:#ffb24d}
+
 </style>
 </head>
 <body>
@@ -121,10 +145,7 @@ button{cursor:pointer;border:0}
   <div class="brand">
     <div class="brandtext">
       <div class="brandmark" aria-hidden="true">
-        <svg viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg">
-          <path d="M30 52 Q55 50 82 14" fill="none" stroke="#1c2024" stroke-width="7" stroke-linecap="round"/>
-          <path d="M14 54 L14 14 Q14 6 22 6 L38 6 Q52 6 52 20 Q52 30 40 32 L22 32 M38 32 L52 54" fill="none" stroke="#f7941e" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <img src="rufzu_R_logo_transparent.png" alt="Ruf:Zu Logo">
       </div>
       <div>
         <div class="ruf">Ruf:<span class="zu">Zu</span></div>
@@ -163,11 +184,15 @@ button{cursor:pointer;border:0}
       <div class="label">Von · Startpunkt</div>
       <div class="inputwrap"><div class="pin">●</div><input id="from" autocomplete="off" placeholder="Start-Haltestelle suchen …"><button class="clear" id="clearFrom" aria-label="Start löschen">×</button></div>
       <div class="suggestions" id="fromSug" hidden></div>
+      <button class="locbtn" id="locFrom" type="button">📍 Standort als Von nutzen</button>
+      <div class="locstatus" id="locFromStatus"></div>
     </div>
     <div class="field">
       <div class="label">Nach · Haltestelle</div>
       <div class="inputwrap"><div class="pin to">◎</div><input id="to" autocomplete="off" placeholder="Haltestelle suchen …"><button class="clear" id="clearTo" aria-label="Eingabe löschen">×</button></div>
       <div class="suggestions" id="toSug" hidden></div>
+      <button class="locbtn" id="locTo" type="button">📍 Standort als Nach nutzen</button>
+      <div class="locstatus" id="locToStatus"></div>
     </div>
     <button class="calc" id="calcBtn">Tarif &amp; Route berechnen</button>
     <div class="subactions"><button class="secondary" id="copyBtn">↗ Von / Nach kopieren</button><button class="secondary" id="officialBtn">€ Offizielle Preisauskunft</button></div>
@@ -180,6 +205,8 @@ button{cursor:pointer;border:0}
       <div class="info" id="zoneMessage"></div>
       <div class="farebox"><div class="fare-title">Tarif</div><div id="fareBox"></div></div>
       <div class="resultactions"><a class="primarylink" id="nav" href="#" target="_blank" rel="noopener">🧭 NAVIGATION</a><a class="orangeLink" id="zonePlan" href="https://www.kaerntner-linien.at/wp-content/uploads/tarifzonenplan-05-2026.pdf" target="_blank" rel="noopener">▦ ZONENPLAN</a></div>
+      <button class="androidbtn" id="androidAutoBtn" type="button">🚗 In Android Auto navigieren</button>
+      <div class="muted" id="androidHint" style="margin-top:8px;text-align:center;font-size:11px">Wenn Handy mit Android Auto verbunden ist, erscheint die Route automatisch auf dem Auto-Display.</div>
     </div>
   </section>
   <section class="mapcard">
