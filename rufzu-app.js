@@ -190,3 +190,159 @@ document.getElementById('officialBtn').addEventListener('click',openOfficial);
 document.getElementById('copyBtn').addEventListener('click',copyTrip);
 
 if(stops.length!==536)console.warn('Haltestellen-Datensatz: erwartet 536, gefunden',stops.length);
+
+// ============ NEU: Standort + Android Auto (nichts bestehendes kaputt) ============
+let currentGpsRaw = null;
+let currentLocationMarker = null;
+let useGpsAs = {from: false, to: false};
+
+function haversine(a,b){ const R=6371, toRad=x=>x*Math.PI/180; const dLat=toRad(b.lat-a.lat), dLon=toRad(b.lon-a.lon); const lat1=toRad(a.lat), lat2=toRad(b.lat); const h=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+
+function findNearestStop(pos, maxKm=2.5){
+  let best=null, bestD=Infinity;
+  for(const s of stops){ const d=haversine(pos,s); if(d<bestD){bestD=d; best=s;} }
+  if(best && bestD<=maxKm) return {stop:best, dist:bestD};
+  return null;
+}
+
+async function useLocationAs(target){
+  const statusEl = document.getElementById(target==='from'?'locFromStatus':'locToStatus');
+  const btn = document.getElementById(target==='from'?'locFrom':'locTo');
+  if(!navigator.geolocation){ statusEl.textContent='Geolocation nicht unterstützt'; statusEl.className='locstatus show warn'; statusEl.style.display='block'; return; }
+  statusEl.textContent='📡 Standort wird ermittelt...'; statusEl.className='locstatus show'; statusEl.style.display='block';
+  if(btn) btn.disabled=true;
+  try{
+    const pos = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:15000,maximumAge:0}));
+    const gps = {lat: pos.coords.latitude, lon: pos.coords.longitude};
+    currentGpsRaw = gps;
+    if(currentLocationMarker) map.removeLayer(currentLocationMarker);
+    currentLocationMarker = L.marker([gps.lat, gps.lon], {icon: L.divIcon({html:'<div style="background:#16865a;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3)">📍</div>', className:'', iconSize:[28,28]})}).addTo(map).bindPopup('Du bist hier').openPopup();
+    map.setView([gps.lat, gps.lon], 14);
+
+    const nearest = findNearestStop(gps, 2.5);
+    if(nearest){
+      selected[target] = nearest.stop;
+      document.getElementById(target).value = nearest.stop.name;
+      document.getElementById(target+'Sug').hidden=true;
+      useGpsAs[target]=false;
+      statusEl.innerHTML = `✓ Nächste Haltestelle: <b>${esc(nearest.stop.name)}</b> (${nearest.dist.toFixed(2).replace('.',',')} km) – GPS für Navigation gespeichert`;
+      statusEl.className='locstatus show';
+      if(target==='from'){ useGpsAs.from = true; currentGpsRaw.from = gps; }
+    } else {
+      const pseudo = {name: `Aktueller Standort (${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)})`, lat: gps.lat, lon: gps.lon, isGps:true, group:'GPS'};
+      selected[target]=pseudo;
+      document.getElementById(target).value = pseudo.name;
+      useGpsAs[target]=true;
+      currentGpsRaw[target]=gps;
+      statusEl.innerHTML = `✓ <b>GPS als ${target==='from'?'Start':'Ziel'}</b> gesetzt`;
+      statusEl.className='locstatus show';
+    }
+  } catch(e){
+    statusEl.textContent='⚠ Standort fehlgeschlagen: '+(e.message||'Erlaubnis verweigert');
+    statusEl.className='locstatus show warn';
+  } finally {
+    if(btn) btn.disabled=false;
+  }
+}
+
+function getNavOriginDestination(){
+  const a = selected.from, b = selected.to;
+  if(!a||!b) return null;
+  let originLat = a.lat, originLon = a.lon;
+  let destLat = b.lat, destLon = b.lon;
+  if(useGpsAs.from && currentGpsRaw && currentGpsRaw.from){ originLat=currentGpsRaw.from.lat; originLon=currentGpsRaw.from.lon; }
+  else if(useGpsAs.from && currentGpsRaw && currentGpsRaw.lat && a.isGps){ originLat=currentGpsRaw.lat; originLon=currentGpsRaw.lon; }
+  if(useGpsAs.to && currentGpsRaw && currentGpsRaw.to){ destLat=currentGpsRaw.to.lat; destLon=currentGpsRaw.to.lon; }
+  return {origin:{lat:originLat,lon:originLon}, dest:{lat:destLat,lon:destLon}};
+}
+
+function startAndroidAutoNav(){
+  const pair = getSelectedPair();
+  if(!pair){ alert('Bitte zuerst Von und Nach auswählen (oder Standort nutzen).'); return; }
+  
+  // Beide Haltestellen für Android Auto
+  const from = selected.from;
+  const to = selected.to;
+  if(!from || !to){ alert('Keine Route gewählt'); return; }
+
+  let origin, destination, waypoints = [];
+  
+  // Fall 1: Standort als Von aktiv -> Route: GPS -> Haltestelle 1 -> Haltestelle 2 (alle zwei)
+  if(useGpsAs.from && currentGpsRaw && (currentGpsRaw.from || currentGpsRaw.lat)){
+    const gps = currentGpsRaw.from || currentGpsRaw;
+    origin = `${gps.lat},${gps.lon}`;
+    // Wenn Von eine echte Haltestelle ist (nicht nur GPS pseudo), dann als Zwischenstopp
+    if(from && !from.isGps){
+      waypoints.push(`${from.lat},${from.lon}`);
+    }
+    destination = `${to.lat},${to.lon}`;
+  } 
+  // Fall 2: Kein GPS, aber 2 fotografierte Haltestellen -> Origin = Haltestelle 1, Destination = Haltestelle 2
+  // Wenn Standort separat gespeichert ist, füge ihn als Origin hinzu und beide als Waypoints/Destination
+  else if(currentGpsRaw && currentGpsRaw.lat && !useGpsAs.from){
+    // GPS vorhanden aber nicht als Von gewählt -> trotzdem beide Haltestellen zeigen: GPS -> Von -> Nach
+    const gps = currentGpsRaw;
+    origin = `${gps.lat},${gps.lon}`;
+    waypoints.push(`${from.lat},${from.lon}`);
+    destination = `${to.lat},${to.lon}`;
+  }
+  else {
+    // Standard: Von -> Nach (beide Haltestellen)
+    origin = `${from.lat},${from.lon}`;
+    destination = `${to.lat},${to.lon}`;
+    waypoints = [];
+  }
+
+  // Google Maps Directions URL mit Waypoints - wird von Android Auto voll unterstützt
+  let gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+  if(waypoints.length > 0){
+    gmapsUrl += `&waypoints=${encodeURIComponent(waypoints.join('|'))}`;
+  }
+
+  // Für Android Auto: erst versuchen direkt zu navigieren, dann fallback mit kompletter Route
+  const hasWaypoints = waypoints.length > 0;
+  
+  if(hasWaypoints){
+    // Bei Route mit Zwischenstopp: direkt die komplette Google Maps Route öffnen - Android Auto zeigt alle Stopps
+    // Hinweis für Fahrer
+    const msg = `Route mit ${waypoints.length+1} Stopps:\n1. ${from ? from.name : 'Start'}\n2. ${to ? to.name : 'Ziel'}\n\nWird in Google Maps geöffnet und erscheint auf Android Auto mit allen Haltestellen.`;
+    if(confirm(msg + '\n\nIn Android Auto starten?')){
+      window.open(gmapsUrl, '_blank', 'noopener');
+    }
+  } else {
+    // Ohne Zwischenstopp: klassisch Von -> Nach (beide Haltestellen)
+    const intentUrl = `google.navigation:q=${to.lat},${to.lon}&mode=d`;
+    try{
+      window.location.href = intentUrl;
+      setTimeout(()=>{ window.open(gmapsUrl, '_blank', 'noopener'); }, 800);
+    }catch(e){
+      window.open(gmapsUrl, '_blank', 'noopener');
+    }
+  }
+}
+
+document.getElementById('locFrom')?.addEventListener('click', ()=>useLocationAs('from'));
+document.getElementById('locTo')?.addEventListener('click', ()=>useLocationAs('to'));
+document.getElementById('androidAutoBtn')?.addEventListener('click', startAndroidAutoNav);
+
+const originalCalculateTrip = calculateTrip;
+calculateTrip = async function(){
+  await originalCalculateTrip();
+  const navData = getNavOriginDestination();
+  if(navData){
+    const navUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(navData.origin.lat+','+navData.origin.lon)}&destination=${encodeURIComponent(navData.dest.lat+','+navData.dest.lon)}&travelmode=driving&dir_action=navigate`;
+    const navEl = document.getElementById('nav');
+    if(navEl) navEl.href = navUrl;
+    const abtn = document.getElementById('androidAutoBtn');
+    if(abtn){ abtn.disabled=false; if(selected.from && selected.to){ abtn.textContent = `🚗 Beide Haltestellen in Android Auto: ${esc(selected.from.name.split(' - ').pop() || selected.from.name)} → ${esc(selected.to.name.split(' - ').pop() || selected.to.name)}`; } }
+  }
+};
+
+const originalScanTimetable = scanTimetable;
+scanTimetable = async function(file){
+  await originalScanTimetable(file);
+  if(selected.from && selected.to){
+    const btn = document.getElementById('androidAutoBtn');
+    if(btn){ btn.style.boxShadow='0 0 0 4px rgba(15,157,88,.25), 0 8px 20px rgba(15,157,88,.35)'; btn.textContent='🚗 2 Adressen erkannt – In Android Auto navigieren'; }
+  }
+};
