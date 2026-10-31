@@ -228,5 +228,3 @@ function getRouteZoneSequence(startStop,endStop,routeGeometry=null){
   if(zEnd!==seq[seq.length-1]) seq.push(zEnd);
   return {zones:seq.length,sequence:seq,verified:false};
 }
-
-console.log('RufZu FIX v6 - SV104->LF056 Wasai = 6 Zonen = 8,50€ inkl. Komfort');
