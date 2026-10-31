@@ -589,12 +589,13 @@ calculateTrip = async function(){
 const originalScanTimetable = scanTimetable;
 scanTimetable = async function(file){
   await originalScanTimetable(file);
+  
   if(selected.from && selected.to){
     const btn = document.getElementById('androidAutoBtn');
     if(btn){ btn.style.boxShadow='0 0 0 4px rgba(15,157,88,.25), 0 8px 20px rgba(15,157,88,.35)'; btn.textContent='🚗 2 Adressen erkannt – In Android Auto navigieren'; }
   }
 };
-
+<script src="rufzu-fix-inject.js"></script>
 </script>
 </body>
 </html>
