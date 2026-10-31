@@ -1,5 +1,4 @@
 'use strict';
-console.log('RufZu APP FIX v6 - 6 Zonen Preis 8,50€');
 const OFFICIAL_PRICE_URL='https://pa2.kaerntner-linien.at/preisauskunft';
 const ZONE_PLAN_URL='https://www.kaerntner-linien.at/wp-content/uploads/tarifzonenplan-05-2026.pdf';
 let selected={from:null,to:null};
