@@ -140,6 +140,10 @@ body{background:#15181c}
 </style>
 </head>
 <body>
+
+<div style="background:#00c853;color:white;padding:10px;text-align:center;font-weight:900;position:sticky;top:0;z-index:9999;">
+  ✅ v13 LIVE - 4 Zonen: St.Veit->Liebenfels->Liemberg->Glanegg = 8,50€</div>
+
 <div class="app">
 <header class="hero">
   <div class="brand">
@@ -236,8 +240,8 @@ const VERIFIED_ROUTES = new Map([
   // FIX v7: SV104 Bahnhof -> LF056 Wasai = 6 Zonen = 8,50€ inkl. Komfort
   ['SV104|LF056',{'zones':4,'sequence':['33551','33558','33545','35553']}],
   ['LF056|SV104',{'zones':4,'sequence':['35553','33545','33558','33551']}],
-  ['SV104|LF055',{'zones':6,'sequence':['33551','33552','33245','34551','33543','33558']}],
-  ['LF055|SV104',{'zones':6,'sequence':['33558','33543','34551','33245','33552','33551']}]
+  ['SV104|LF055',{'zones':4,'sequence':['33551','33558','33545','35553']}],
+  ['LF055|SV104',{'zones':6,'sequence':['35553','33545','33558','33551']}]
 ]);
 function zonesBetween(s,e,g){return new Set();}
 function getRouteZoneSequence(a,b,g=null){
@@ -251,7 +255,7 @@ function getRouteZoneSequence(a,b,g=null){
     const eHasWasai = eN.includes('LF056') || eN.includes('WASAI') || eN.includes('LF055');
     if((sHasSV104 && eHasWasai) || (eHasSV104 && sHasWasai)){
       console.log('FIX v7: SV104 Bahnhof -> LF056 Wasai = 6 Zonen = 8,50€');
-      return {zones:6,sequence:['33551','33552','33245','34551','33543','33558'],verified:true};
+      return {zones:4,sequence:['33551','33558','33545','35553'],verified:true};
     }
   }catch(e){}
   const sc=(a.name||'').match(/^([A-Z]{2}\d{3})\b/i); const ec=(b.name||'').match(/^([A-Z]{2}\d{3})\b/i);
