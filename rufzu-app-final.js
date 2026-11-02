@@ -179,25 +179,12 @@ document.getElementById('androidAutoBtn')?.addEventListener('click', ()=>{
 });
 
 document.getElementById('scanTicketBtn')?.addEventListener('click', ()=>{
-  const input=document.createElement('input'); input.type='file'; input.accept='image/*';
-  input.onchange=(e)=>{
-    const file=e.target.files[0]; if(!file) return;
-    const statusEl=document.getElementById('ocrStatus'); const resultEl=document.getElementById('ticketResult');
-    if(statusEl){statusEl.textContent='📸 Bild wird analysiert...'; statusEl.className='ocrstatus';}
-    if(resultEl){resultEl.className='ticketresult show'; resultEl.innerHTML='<b>Bild:</b> '+file.name+'<br><small>Voll-OCR in nächster Version – bitte manuell wählen</small>';}
-    const img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;border-radius:8px;margin-top:8px'; img.src=URL.createObjectURL(file); if(resultEl) resultEl.appendChild(img);
-    if(statusEl){statusEl.textContent='✅ Bild erhalten – manuelle Eingabe empfohlen'; statusEl.className='ocrstatus good';}
-  }; input.click();
+  const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.setAttribute('capture','environment');
+  input.onchange=(e)=>{ const file=e.target.files[0]; if(!file) return; const statusEl=document.getElementById('ocrStatus'); const resultEl=document.getElementById('ticketResult'); if(statusEl){statusEl.textContent='📸 Ticket wird analysiert...'; statusEl.className='ocrstatus';} if(resultEl){resultEl.className='ticketresult show'; resultEl.innerHTML='<b>Ticket-Bild:</b> '+file.name+'<br><small>Foto erhalten – Kamera genutzt</small>';} const img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;border-radius:8px;margin-top:8px'; img.src=URL.createObjectURL(file); if(resultEl) resultEl.appendChild(img); if(statusEl){statusEl.textContent='✅ Bild via Kamera erhalten'; statusEl.className='ocrstatus good';} }; input.click();
 });
 document.getElementById('scanLocationBtn')?.addEventListener('click', ()=>{
-  const input=document.createElement('input'); input.type='file'; input.accept='image/*';
-  input.onchange=(e)=>{
-    const file=e.target.files[0]; if(!file) return;
-    const statusEl=document.getElementById('ocrStatus'); const resultEl=document.getElementById('ticketResult');
-    if(statusEl){statusEl.textContent='📍 Ort wird erkannt...';}
-    if(resultEl){resultEl.className='ticketresult show'; resultEl.innerHTML='<b>Ortsbild:</b> '+file.name;}
-    const img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;border-radius:8px;margin-top:8px'; img.src=URL.createObjectURL(file); if(resultEl) resultEl.appendChild(img);
-  }; input.click();
+  const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.setAttribute('capture','environment');
+  input.onchange=(e)=>{ const file=e.target.files[0]; if(!file) return; const statusEl=document.getElementById('ocrStatus'); const resultEl=document.getElementById('ticketResult'); if(statusEl){statusEl.textContent='📍 Ort wird erkannt...';} if(resultEl){resultEl.className='ticketresult show'; resultEl.innerHTML='<b>Ortsbild via Kamera:</b> '+file.name;} const img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;border-radius:8px;margin-top:8px'; img.src=URL.createObjectURL(file); if(resultEl) resultEl.appendChild(img); }; input.click();
 });
 
 document.getElementById('locFrom')?.addEventListener('click', async ()=>{
