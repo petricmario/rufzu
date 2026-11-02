@@ -3,89 +3,159 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RufZu VOLL DESIGN FINAL - 533 + 430 Zonen + Grenzen + Fahnen</title>
+<meta name="theme-color" content="#f7941e">
+<title>RufZu – Rufbus Zollfeld | 533 Haltestellen</title>
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <style>
-:root{--orange:#f7941e;--ink:#1c2024;--muted:#6a737b}
-*{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#15181c;color:#fff}
-.app{max-width:780px;margin:auto;background:#15181c;min-height:100vh}
-.hero{background:#fff;color:#1c2024;padding:18px 18px 50px;border-bottom:4px solid var(--orange)} 
-.hero h1{font-size:22px;margin:14px 0 6px} .hero p{color:#6a737b;font-size:13px;margin:0}
-.card{background:#fff;color:#222;border-radius:20px;padding:16px;margin:-28px 12px 12px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
-.label{font-size:11px;font-weight:800;color:#6a737b;text-transform:uppercase;margin:8px 0 4px}
-input{width:100%;padding:12px;border-radius:12px;border:1px solid #dfe4e8;font-weight:700}
-button{border:0;cursor:pointer} .calc{width:100%;padding:14px;background:var(--orange);color:#fff;font-weight:900;border-radius:12px;margin-top:12px;text-transform:uppercase}
-.result{background:#fff;color:#222;border-radius:20px;margin:12px;overflow:hidden;display:none} .result.show{display:block}
-.zonehero{background:linear-gradient(135deg,#f7941e,#e87c0a);padding:16px;color:#fff} .zonebig{font-size:32px;font-weight:900}
-#map{width:100%;height:420px;background:#f8f4f0}
-.marker-dot{width:11px;height:11px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3)}
-.flag-start{width:36px;height:36px;background:#00c853;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;box-shadow:0 3px 12px rgba(0,0,0,.4);font-size:18px}
-.flag-end{width:36px;height:36px;background:#d32f2f;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;box-shadow:0 3px 12px rgba(0,0,0,.4);font-size:18px}
-.flag-label{background:rgba(0,0,0,.75);color:#fff;font-size:10px;font-weight:900;padding:2px 6px;border-radius:6px;white-space:nowrap;margin-top:2px;text-align:center}
-.suggestions{background:#fff;border:1px solid #ddd;border-radius:12px;max-height:240px;overflow:auto;margin-top:4px} .sug{padding:10px 12px;border-bottom:1px solid #eee;cursor:pointer} .sug:last-child{border:0} .sug b{font-size:13px} .sug span{font-size:11px;color:#666;display:block}
-.footer{padding:16px;text-align:center;color:#8a939c;font-size:11px}
-</style>
-<style>
-.marker-dot{width:11px;height:11px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3)}
-.flag-start{width:36px;height:36px;background:#00c853;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;box-shadow:0 3px 12px rgba(0,0,0,.4);font-size:18px}
-.flag-end{width:36px;height:36px;background:#d32f2f;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;box-shadow:0 3px 12px rgba(0,0,0,.4);font-size:18px}
-.flag-label{background:rgba(0,0,0,.75);color:#fff;font-size:10px;font-weight:900;padding:2px 6px;border-radius:6px;white-space:nowrap;margin-top:2px;text-align:center}
-.suggestions{background:#fff;border:1px solid #ddd;border-radius:12px;max-height:240px;overflow:auto;margin-top:4px;position:absolute;left:0;right:0;z-index:99} .sug{padding:10px 12px;border-bottom:1px solid #eee;cursor:pointer} .sug b{font-size:13px} .sug small{font-size:11px;color:#666}
+:root{--orange:#f7941e;--orange-dark:#e87c0a;--ink:#1c2024;--muted:#6a737b;--bg:#f5f6f7;--card:#ffffff;--border:#e6e8eb;--green:#00c853;--red:#d32f2f}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.app{max-width:840px;margin:0 auto;background:var(--bg);min-height:100vh}
+.hero{background:var(--card);color:var(--ink);padding:20px 20px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.brand{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.brandtext{display:flex;align-items:center;gap:12px}
+.brandmark{width:72px;height:48px;display:flex;align-items:center;justify-content:center}
+.brandmark img{width:100%;height:100%;object-fit:contain}
+.ruf{font-size:28px;font-weight:900;font-style:italic;letter-spacing:-.5px} .zu{color:var(--orange)}
+.tag{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.phone{text-align:right} .phone .lbl{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:.5px} .phone a{font-size:14px;font-weight:800;color:var(--ink);text-decoration:none}
+.hero h1{font-size:20px;font-weight:800;line-height:1.25;margin:16px 0 8px;max-width:600px} .hero p{font-size:13px;color:var(--muted);margin:0;max-width:600px;line-height:1.5}
+.vehicle-hero{margin:16px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:0;overflow:hidden;display:grid;grid-template-columns:140px 1fr;gap:0;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.vehicle-photo{height:120px;background:#f3f5f7;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.vehicle-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.vehicle-copy{padding:16px} .vehicle-copy b{display:block;font-size:15px;font-weight:800} .vehicle-copy span{display:block;font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px;margin:16px;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.section-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 6px}
+.label:first-child{margin-top:0}
 .field{position:relative}
+.inputwrap{display:flex;align-items:center;gap:8px;background:#f8f9fa;border:1.5px solid var(--border);border-radius:12px;padding:0 12px;transition:border-color .2s}
+.inputwrap:focus-within{border-color:var(--orange);background:#fff}
+.pin{width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0}
+.pin.to{background:var(--orange)}
+input{flex:1;border:0;background:transparent;padding:14px 0;font-size:15px;font-weight:600;outline:none;color:var(--ink)}
+input::placeholder{color:#aab2b9;font-weight:500}
+.clear{width:28px;height:28px;border-radius:50%;background:#e9ecef;border:0;color:#6c757d;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.clear:hover{background:#dee2e6}
+.suggestions{position:absolute;left:0;right:0;top:calc(100% + 8px);background:#fff;border:1px solid var(--border);border-radius:12px;max-height:280px;overflow:auto;box-shadow:0 8px 32px rgba(0,0,0,.12);z-index:50}
+.sug{padding:12px 14px;border-bottom:1px solid #f1f3f5;cursor:pointer;transition:background .15s}
+.sug:last-child{border:0} .sug:hover{background:#f8f9fa} .sug b{display:block;font-size:14px;font-weight:600} .sug small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.locbtn{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 10px;background:#f1f3f5;border:1px solid #e9ecef;border-radius:8px;font-size:11px;font-weight:600;color:#495057;cursor:pointer}
+.locbtn:hover{background:#e9ecef}
+.locstatus{font-size:11px;color:var(--muted);margin-top:6px;min-height:16px}
+.locstatus.show{color:var(--green);font-weight:600} .locstatus.warn{color:var(--red)}
+.calc{width:100%;padding:14px;background:var(--orange);color:#fff;font-weight:800;font-size:14px;border:0;border-radius:12px;margin-top:16px;cursor:pointer;transition:background .15s;text-transform:uppercase;letter-spacing:.3px}
+.calc:hover{background:var(--orange-dark)} .calc:active{transform:scale(.98)}
+.scanrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.scanbtn{padding:10px;background:#fff;border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.scanbtn:hover{background:#f8f9fa}
+.subactions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.secondary{padding:10px;background:#fff;border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer}
+.secondary:hover{background:#f8f9fa}
+.klimaticket-info{margin-top:16px;padding:12px;background:#fff8f0;border:1px solid #ffe0b2;border-radius:12px;font-size:12px;color:#5d4037;line-height:1.4}
+.klimaticket-info b{color:#e65100}
+.result{background:var(--card);border:1px solid var(--border);border-radius:20px;margin:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.04);display:none}
+.result.show{display:block}
+.resulthead{padding:16px 20px;background:#1c2024;color:#fff}
+.eyebrow{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--orange)}
+.route{margin-top:8px;font-size:14px;line-height:1.5;font-weight:500}
+.zonehero{background:linear-gradient(135deg,var(--orange),var(--orange-dark));padding:20px;color:#fff}
+.zonebig{font-size:32px;font-weight:900;letter-spacing:-.5px}
+.zonepath{margin-top:8px;font-size:13px;font-weight:600;line-height:1.4;opacity:.95}
+.zonepath small{font-size:11px;opacity:.8;font-weight:500}
+.distance{display:flex;justify-content:space-between;padding:12px 20px;background:#f8f9fa;border-top:1px solid #e9ecef;border-bottom:1px solid #e9ecef;font-size:13px}
+.distance strong{font-size:14px}
+.info{padding:12px 20px;font-size:12px;color:var(--muted)}
+.farebox{padding:16px 20px}
+.faregrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fareitem{border:1px solid var(--border);border-radius:12px;padding:12px}
+.fareitem b{display:block;font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.5px}
+.fareitem .price{font-size:16px;font-weight:800;margin-top:4px}
+.resultactions{display:flex;gap:8px;padding:0 20px 20px}
+.primarylink, .orangeLink{flex:1;padding:12px;background:var(--ink);color:#fff;text-align:center;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none;border:0;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.orangeLink{background:var(--orange)}
+.mapcard{background:var(--card);border:1px solid var(--border);border-radius:20px;margin:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.maphead{padding:14px 20px;font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+.maphead span{font-size:11px;color:var(--muted);font-weight:500}
+#map{width:100%;height:440px;background:#f0f2f0}
+.marker-dot{width:10px;height:10px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.flag-start{width:34px;height:34px;background:var(--green);border:3px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;box-shadow:0 3px 12px rgba(0,0,0,.25);font-size:16px}
+.flag-end{width:34px;height:34px;background:var(--red);border:3px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;box-shadow:0 3px 12px rgba(0,0,0,.25);font-size:16px}
+.flag-label{background:rgba(0,0,0,.8);color:#fff;font-size:9px;font-weight:700;padding:3px 7px;border-radius:6px;white-space:nowrap;margin-top:3px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.footer{padding:24px 20px;text-align:center;color:#8a939c;font-size:11px;line-height:1.5}
+.footer b{color:var(--ink)}
+.footer a{color:var(--muted);text-decoration:none} .footer a:hover{color:var(--ink)}
+.ocrstatus{font-size:11px;margin-top:8px;min-height:16px}
+.ocrstatus.good{color:var(--green);font-weight:600}
+.ticketresult{background:#f8f9fa;border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:8px;font-size:12px;display:none}
+.ticketresult.show{display:block}
+@media (max-width:640px){.hero{padding:16px}.hero h1{font-size:18px}.vehicle-hero{grid-template-columns:1fr}.vehicle-photo{height:160px}.card{margin:12px;padding:16px}.faregrid{grid-template-columns:1fr}.scanrow{grid-template-columns:1fr}.subactions{grid-template-columns:1fr}}
 </style>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="rufzu-daten-final.js"></script>
 </head>
 <body>
-<div style="background:#00c853;color:white;padding:8px;text-align:center;font-weight:900;font-size:13px">✅ VOLL DESIGN FINAL - 533 Haltestellen + 430 Zonen + alle Grenzen orange + VersaTiles colorful + START/ZIEL Fahne normal</div>
 <div class="app">
 <header class="hero">
   <div class="brand">
     <div class="brandtext">
-      <div class="brandmark"><img src="rufzu_R_logo_transparent.png" alt="RufZu Logo" style="width:76px;height:52px;object-fit:contain" onerror="this.style.display='none'"></div>
-      <div><div class="ruf">Ruf:<span class="zu">Zu</span></div><div class="tag">Rufbus Zollfeld & Umgebung – 533 Haltestellen – VOLL DESIGN mit Grenzen</div></div>
+      <div class="brandmark"><img src="rufzu_R_logo_transparent.png" alt="RufZu" onerror="this.style.display='none'"></div>
+      <div><div class="ruf">Ruf:<span class="zu">Zu</span></div><div class="tag">Rufbus Zollfeld & Umgebung – 533 Haltestellen</div></div>
     </div>
-    <div class="phone"><span class="lbl">Anrufen</span><a href="tel:+43421293083">04212 / 93083</a></div>
+    <div class="phone"><span class="lbl">Anrufen</span><a href="tel:+43421293083">04212 93083</a></div>
   </div>
-  <h1>Gut zu wissen: Ruf:Zu bringt dich zuverlässig zu deinen Anschlussverbindungen.</h1>
-  <p>Jetzt mit vollständigem Design, 533 Original Haltestellen, allen 430 Tarifzonen-Grenzen orange sichtbar, VersaTiles colorful Karte und START/ZIEL Fahnen.</p>
+  <h1>Ruf:Zu bringt dich zuverlässig zu deinen Anschlussverbindungen.</h1>
+  <p>533 Haltestellen original, 430 Tarifzonen, VersaTiles colorful Karte mit allen Grenzen, START/ZIEL Fahnen, Abfotografieren & Navigation.</p>
 </header>
-<main class="content">
+
+<main>
+  <div class="vehicle-hero">
+    <div class="vehicle-photo"><img src="rufzu_8sitzer.png" alt="RufZu Bus" onerror="this.parentElement.innerHTML='🚌'"></div>
+    <div class="vehicle-copy"><b>Ruf:Zu 8-Sitzer</b><span>Komfortabel, barrierefrei, klimatisiert – dein Rufbus für Zollfeld & Umgebung. 533 Haltestellen, 430 Tarifzonen.</span></div>
+  </div>
+
   <section class="card">
-    <div class="section-title">Fahrt berechnen – 533 Haltestellen</div>
-    <div class="field" style="margin-top:14px">
+    <div class="section-title">Fahrt berechnen</div>
+    <div class="field" style="margin-top:16px">
       <div class="label">Von · Startpunkt</div>
-      <div class="inputwrap"><div class="pin">●</div><input id="from" autocomplete="off" placeholder="Start-Haltestelle suchen …"><button class="clear" id="clearFrom">×</button></div>
+      <div class="inputwrap"><div class="pin">●</div><input id="from" autocomplete="off" placeholder="z.B. FS074 Kraig AVS"><button class="clear" id="clearFrom">×</button></div>
       <div class="suggestions" id="fromSug" hidden></div>
+      <button class="locbtn" id="locFrom" type="button">📍 Standort als Von nutzen</button>
+      <div class="locstatus" id="locFromStatus"></div>
     </div>
     <div class="field">
       <div class="label">Nach · Haltestelle</div>
-      <div class="inputwrap"><div class="pin to">◎</div><input id="to" autocomplete="off" placeholder="Haltestelle suchen …"><button class="clear" id="clearTo">×</button></div>
+      <div class="inputwrap"><div class="pin to">◎</div><input id="to" autocomplete="off" placeholder="z.B. FS066 Steinbichl"><button class="clear" id="clearTo">×</button></div>
       <div class="suggestions" id="toSug" hidden></div>
+      <button class="locbtn" id="locTo" type="button">📍 Standort als Nach nutzen</button>
+      <div class="locstatus" id="locToStatus"></div>
     </div>
     <button class="calc" id="calcBtn">Tarif & Route berechnen</button>
-    <div class="subactions"><button class="secondary" id="copyBtn">↗ Von / Nach kopieren</button><button class="secondary" onclick="window.open('https://pa2.kaerntner-linien.at/preisauskunft','_blank')">€ Offizielle Preisauskunft</button></div>
+    <div class="scanrow">
+      <button class="scanbtn" id="scanTicketBtn">📸 Ticket abfotografieren</button>
+      <button class="scanbtn ticket" id="scanLocationBtn">📍 Ort abfotografieren</button>
+    </div>
+    <div class="ocrstatus" id="ocrStatus"></div>
+    <div class="ticketresult" id="ticketResult"></div>
+    <div class="subactions">
+      <button class="secondary" id="copyBtn">↗ Von / Nach kopieren</button>
+      <button class="secondary" id="officialBtn">€ Offizielle Preisauskunft</button>
+    </div>
+    <div class="klimaticket-info"><b>🎫 Klimaticket-Vorteil:</b> Mit KlimaTicket, Kärnten Ticket oder Gästekarte nur 2,00 € Komfortzuschlag pro Fahrt.</div>
   </section>
 
   <section class="result" id="result">
     <div class="resultcard">
       <div class="resulthead"><div class="eyebrow">Tarifberechnung</div><div class="route" id="routeText"></div></div>
       <div class="zonehero"><div class="zonebig" id="zoneText">—</div><div class="zonepath" id="zonePath">Noch keine Fahrt berechnet.</div></div>
-      <div class="distance"><div><strong id="distanceText">—</strong><small id="distanceNote">Noch keine Route – Grenzen sind orange sichtbar</small></div></div>
-      <div class="info" id="zoneMessage"></div>
+      <div class="distance"><div><strong id="distanceText">—</strong><small id="distanceNote">Alle 430 Grenzen orange sichtbar</small></div><div style="text-align:right"><small id="zoneCountNote">533 Haltestellen</small></div></div>
       <div class="farebox" id="fareBox"></div>
-      <div class="resultactions"><a class="primarylink" id="nav" href="#" target="_blank">🧭 In Maps navigieren</a><button class="orangeLink" id="androidAutoBtn" type="button">🚗 Android Auto</button></div>
+      <div class="resultactions"><a class="primarylink" id="nav" href="#" target="_blank">🧭 Maps</a><button class="orangeLink" id="androidAutoBtn" type="button">🚗 Android Auto</button></div>
     </div>
   </section>
 
-  <section class="mapcard"><div class="maphead">Karte – VersaTiles colorful – alle 430 Grenzen orange <span id="mapInfo">533 Haltestellen · START 🟢 ZIEL 🔴</span></div><div class="map" id="map"></div></section>
+  <section class="mapcard"><div class="maphead"><span>Karte – VersaTiles colorful</span><span id="mapInfo">430 Grenzen orange · START 🟢 ZIEL 🔴</span></div><div class="map" id="map"></div></section>
 
-  <div class="vehicle-hero">
-    <div class="vehicle-photo"><img src="rufzu_8sitzer.png" alt="RufZu Bus" style="display:block;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'; this.parentElement.textContent='🚌'"></div>
-    <div class="vehicle-copy"><b>Ruf:Zu 8-Sitzer</b><span>Komfortabel, barrierefrei, mit Klimaanlage – dein Rufbus für Zollfeld & Umgebung</span></div>
-  </div>
-
-  <footer class="footer"><b>Ruf:Zu</b> – 533 Haltestellen original, 430 Zonen, alle Grenzen orange, VersaTiles colorful, START grüne Fahne 🚩 ZIEL rote Fahne 🏁<br><a class="official" href="https://pa2.kaerntner-linien.at/preisauskunft" target="_blank">Offizielle Preisauskunft Kärntner Linien</a></footer>
+  <footer class="footer"><b>Ruf:Zu</b> – 533 Haltestellen original, 430 Zonen, alle Grenzen orange, VersaTiles colorful, START 🚩 ZIEL 🏁, Abfotografieren, Navigation<br>Tarife: 6 Zonen Beispiel FS074→FS066 = Kraig → Hunnenbrunn → St.Veit → Fachau → Dreifaltigkeit → Steinbichl<br><a href="https://pa2.kaerntner-linien.at/preisauskunft" target="_blank">Offizielle Preisauskunft Kärntner Linien</a> · <a href="tel:+43421293083">04212 93083</a></footer>
 </main>
 </div>
 
