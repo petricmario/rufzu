@@ -231,7 +231,15 @@ main > .card:has(#map) { background: var(--card); }
 <div style="margin-top:12px;display:flex;gap:8px"><a id="nav" href="#" target="_blank" style="padding:8px 12px;background:#1c2024;color:#fff;border-radius:8px;text-decoration:none;font-size:13px">🧭 Maps</a> <button id="androidAutoBtn" style="padding:8px 12px;background:#1c2024;color:#fff;border-radius:8px;border:0;font-size:13px;cursor:pointer">🚗 Android Auto</button></div>
 </section>
 
-<section class="card"><div id="map"></div><div id="mapBottomInfo" style="font-size:11px;padding:8px;background:#fff;border-top:1px solid #eee;font-weight:600">Klicke auf eine Haltestelle</div></section>
+<section class="card"><div id="map"></div><div id="mapBottomInfo" style="font-size:11px;padding:8px;background:#fff;border-top:1px solid #eee;font-weight:600">Klicke auf eine Haltestelle</div>
+<div style="padding:12px;display:flex;flex-wrap:wrap;gap:8px;background:var(--card)">
+  <button id="googleTariffMapBtn" class="scanbtn" type="button" aria-expanded="false" aria-controls="googleTariffMapPanel">🗺️ Tarifzonenkarte öffnen</button>
+  <a href="https://www.google.com/maps/d/viewer?mid=1JIur94aavpd2QVJaCm9PBe-pcNAnzgw" target="_blank" rel="noopener noreferrer" class="scanbtn" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">↗ In Google Maps öffnen</a>
+</div>
+<div id="googleTariffMapPanel" hidden style="padding:0 12px 12px;background:var(--card)">
+  <iframe title="Ruf:Zu Tarifzonenkarte auf Google My Maps" src="https://www.google.com/maps/d/embed?mid=1JIur94aavpd2QVJaCm9PBe-pcNAnzgw" loading="lazy" allowfullscreen style="display:block;width:100%;height:clamp(360px,60vh,650px);border:1px solid var(--border);border-radius:10px;background:#fff"></iframe>
+  <p style="font-size:12px;color:var(--muted);margin:8px 2px 0">Falls die Karte nicht angezeigt wird, bitte „In Google Maps öffnen“ verwenden. Die Karte muss dafür öffentlich bzw. für Besucher freigegeben sein.</p>
+</div></section>
 </main>
 </div>
 
@@ -1071,6 +1079,17 @@ addScan('scanKlimaticketBtn','Klimaticket');
 
 var copyBtn=document.getElementById('copyBtn'); if(copyBtn) copyBtn.addEventListener('click', function(){ var a=selected.from,b=selected.to; if(!a||!b){alert('Bitte wählen'); return;} var t='Von: '+a.name+' ('+a.code+')\nNach: '+b.name+' ('+b.code+')'; if(navigator.clipboard) navigator.clipboard.writeText(t).then(function(){alert('Kopiert');}); else alert(t); });
 var offBtn=document.getElementById('officialBtn'); if(offBtn) offBtn.addEventListener('click', function(){ window.open('https://pa2.kaerntner-linien.at/preisauskunft','_blank'); });
+var googleTariffMapBtn=document.getElementById('googleTariffMapBtn');
+var googleTariffMapPanel=document.getElementById('googleTariffMapPanel');
+if(googleTariffMapBtn && googleTariffMapPanel){
+  googleTariffMapBtn.addEventListener('click',function(){
+    var opening=googleTariffMapPanel.hidden;
+    googleTariffMapPanel.hidden=!opening;
+    googleTariffMapBtn.setAttribute('aria-expanded',String(opening));
+    googleTariffMapBtn.textContent=opening?'🗺️ Tarifzonenkarte schließen':'🗺️ Tarifzonenkarte öffnen';
+    if(opening) googleTariffMapPanel.scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
+}
 var andBtn=document.getElementById('androidAutoBtn'); if(andBtn) andBtn.addEventListener('click', function(){ var a=selected.from,b=selected.to; if(!a||!b){alert('Bitte Route berechnen'); return;} window.open('https://www.google.com/maps/dir/?api=1&origin='+a.lat+','+a.lon+'&destination='+b.lat+','+b.lon+'&travelmode=driving','_blank'); });
 var locFrom=document.getElementById('locFrom'); if(locFrom) locFrom.addEventListener('click', function(){ var st=document.getElementById('locFromStatus'); if(st) st.textContent='📍 Standort...'; if(!navigator.geolocation){ if(st) st.textContent='Kein GPS'; return; } navigator.geolocation.getCurrentPosition(function(pos){ var lat=pos.coords.latitude, lon=pos.coords.longitude; var best=null, bd=Infinity; for(var i=0;i<stops.length;i++){ var s=stops[i]; var d=Math.sqrt((s.lat-lat)*(s.lat-lat)+(s.lon-lon)*(s.lon-lon)); if(d<bd){bd=d; best=s;}} if(best){ selected.from=best; document.getElementById('from').value=best.name; if(st) st.textContent='✅ '+best.name; updateBottom('Von: '+best.name); if(map) map.flyTo({center:[best.lon,best.lat], zoom:14}); } }, function(e){ if(st) st.textContent='❌ '+e.message; }, {enableHighAccuracy:true, timeout:10000}); });
 var locTo=document.getElementById('locTo'); if(locTo) locTo.addEventListener('click', function(){ var st=document.getElementById('locToStatus'); if(st) st.textContent='📍 Standort...'; if(!navigator.geolocation){ if(st) st.textContent='Kein GPS'; return; } navigator.geolocation.getCurrentPosition(function(pos){ var lat=pos.coords.latitude, lon=pos.coords.longitude; var best=null, bd=Infinity; for(var i=0;i<stops.length;i++){ var s=stops[i]; var d=Math.sqrt((s.lat-lat)*(s.lat-lat)+(s.lon-lon)*(s.lon-lon)); if(d<bd){bd=d; best=s;}} if(best){ selected.to=best; document.getElementById('to').value=best.name; if(st) st.textContent='✅ '+best.name; updateBottom('Nach: '+best.name); if(map) map.flyTo({center:[best.lon,best.lat], zoom:14}); } }, function(e){ if(st) st.textContent='❌ '+e.message; }, {enableHighAccuracy:true, timeout:10000}); });
