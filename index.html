@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RufZu – mit KM + Fahrzeit – MS003 GL055 Fachau</title>
+<title>RufZu – Zollfeld</title>
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <style>
 :root{--orange:#f7941e;--ink:#1c2024;--muted:#6a737b;--bg:#f5f6f7;--card:#fff;--border:#e6e8eb}
-body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)} .app{max-width:840px;margin:0 auto} .hero{background:#fff;padding:16px;border-bottom:1px solid var(--border)} .brand{display:flex;justify-content:space-between;align-items:center} .ruf{font-size:24px;font-weight:900;font-style:italic} .zu{color:var(--orange)}
-.vehicle-hero{margin:12px;background:#fff;border:1px solid var(--border);border-radius:16px;display:grid;grid-template-columns:120px 1fr;overflow:hidden} .vehicle-photo{height:100px;background:#f3f5f7;display:flex;align-items:center;justify-content:center} .vehicle-photo img{width:100%;height:100%;object-fit:cover}
+body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)} .app{max-width:840px;margin:0 auto} .hero{background:#fff;padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center} .ruf{font-size:22px;font-weight:900;font-style:italic} .zu{color:var(--orange)} .tel{font-weight:700;color:var(--ink);text-decoration:none}
+.vehicle-hero{margin:12px;background:#fff;border:1px solid var(--border);border-radius:16px;display:grid;grid-template-columns:110px 1fr;overflow:hidden} .vehicle-photo{height:90px;background:#f3f5f7;display:flex;align-items:center;justify-content:center} .vehicle-photo img{width:100%;height:100%;object-fit:cover}
 .card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin:12px} .inputwrap{display:flex;align-items:center;gap:8px;background:#f8f9fa;border:1.5px solid var(--border);border-radius:10px;padding:0 10px} input{flex:1;border:0;background:transparent;padding:12px 0;font-weight:600;outline:none;font-size:15px} .clear{width:28px;height:28px;border-radius:50%;background:#e9ecef;border:0;cursor:pointer;font-size:18px}
 .suggestions{position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--border);border-radius:10px;max-height:240px;overflow:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.15)} .sug{padding:10px;border-bottom:1px solid #eee;cursor:pointer} .sug:hover{background:#f8f9fa}
 .calc{width:100%;padding:14px;background:var(--orange);color:#fff;font-weight:800;border:0;border-radius:10px;margin-top:12px;cursor:pointer;font-size:16px} .scanrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px} .scanbtn{padding:12px;background:#fff;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer}
@@ -18,16 +18,16 @@ body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)
 </head>
 <body>
 <div class="app">
-<header class="hero"><div class="brand"><div><span class="ruf">Ruf:<span class="zu">Zu</span></span> Zollfeld – 533 Haltestellen – mit KM + Fahrzeit</div><div><a href="tel:+43421293083">04212 93083</a></div></div></header>
+<header class="hero"><div><span class="ruf">Ruf:<span class="zu">Zu</span></span> Zollfeld</div><a class="tel" href="tel:+43421293083">04212 93083</a></header>
 <main>
-<div class="vehicle-hero"><div class="vehicle-photo"><img src="rufzu_8sitzer.png" alt="Mercedes Vito" onerror="this.parentNode.innerHTML='🚌 Mercedes Vito'"></div><div style="padding:12px"><b>Mercedes Vito 8-Sitzer mit großem Stern – Option 2</b><br><small>533 Haltestellen, 430 Zonen, Fachau 33544 – jetzt mit KM + Fahrzeit</small></div></div>
+<div class="vehicle-hero"><div class="vehicle-photo"><img src="rufzu_8sitzer.png" alt="Bus"></div><div style="padding:12px"><b>Mercedes Vito 8-Sitzer</b><br><small>Komfortabel & sicher – RufZu Zollfeld</small></div></div>
 
 <section class="card">
-<div>Von: <div style="position:relative"><div class="inputwrap"><input id="from" placeholder="z.B. MS003 Tessendorfer Straße"><button class="clear" id="clearFrom">×</button></div><div class="suggestions" id="fromSug" hidden></div></div><button id="locFrom" style="margin-top:6px;padding:6px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer">📍 Standort Von</button><div id="locFromStatus" style="font-size:11px;margin-top:4px"></div></div>
-<div style="margin-top:12px">Nach: <div style="position:relative"><div class="inputwrap"><input id="to" placeholder="z.B. GL055 Launsdorf Feuerwehr"><button class="clear" id="clearTo">×</button></div><div class="suggestions" id="toSug" hidden></div></div><button id="locTo" style="margin-top:6px;padding:6px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer">📍 Standort Nach</button><div id="locToStatus" style="font-size:11px;margin-top:4px"></div></div>
-<button class="calc" id="calcBtn">Tarif + KM + Fahrzeit berechnen</button>
-<div class="scanrow"><button class="scanbtn" id="scanTicketBtn">📸 Ticket abfotografieren</button><button class="scanbtn" id="scanLocationBtn">📍 Ort abfotografieren</button></div>
-<div class="scanrow"><button class="scanbtn" id="scanTimetableBtn">📅 Fahrplan abfotografieren</button><button class="scanbtn" id="scanKlimaticketBtn">🎫 Klimaticket scannen – nur 2€!</button></div>
+<div>Von: <div style="position:relative"><div class="inputwrap"><input id="from" placeholder="Haltestelle eingeben"><button class="clear" id="clearFrom">×</button></div><div class="suggestions" id="fromSug" hidden></div></div><button id="locFrom" style="margin-top:6px;padding:6px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer">📍 Standort Von</button><div id="locFromStatus" style="font-size:11px;margin-top:4px"></div></div>
+<div style="margin-top:12px">Nach: <div style="position:relative"><div class="inputwrap"><input id="to" placeholder="Haltestelle eingeben"><button class="clear" id="clearTo">×</button></div><div class="suggestions" id="toSug" hidden></div></div><button id="locTo" style="margin-top:6px;padding:6px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer">📍 Standort Nach</button><div id="locToStatus" style="font-size:11px;margin-top:4px"></div></div>
+<button class="calc" id="calcBtn">Tarif berechnen</button>
+<div class="scanrow"><button class="scanbtn" id="scanTicketBtn">📸 Ticket</button><button class="scanbtn" id="scanLocationBtn">📍 Ort</button></div>
+<div class="scanrow"><button class="scanbtn" id="scanTimetableBtn">📅 Fahrplan</button><button class="scanbtn" id="scanKlimaticketBtn">🎫 Klimaticket</button></div>
 <div id="ocrStatus" style="font-size:12px;margin-top:8px;color:#666"></div><div id="ticketResult" style="display:none;margin-top:8px;padding:10px;background:#f8f9fa;border-radius:10px"></div>
 <div style="margin-top:10px;display:flex;gap:8px"><button id="copyBtn" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer">↗ Kopieren</button> <button id="officialBtn" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer">€ Offiziell</button></div>
 </section>
@@ -38,10 +38,10 @@ body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)
 <div id="zoneText" style="font-size:20px;font-weight:900;margin-top:12px"></div>
 <div id="zonePath" style="margin-top:8px;font-size:13px;line-height:1.4"></div>
 <div id="fareBox" style="margin-top:12px"></div>
-<div style="margin-top:12px;display:flex;gap:8px"><a id="nav" href="#" target="_blank" style="padding:8px 12px;background:#1c2024;color:#fff;border-radius:8px;text-decoration:none;font-size:13px">🧭 Google Maps</a> <button id="androidAutoBtn" style="padding:8px 12px;background:#1c2024;color:#fff;border-radius:8px;border:0;font-size:13px;cursor:pointer">🚗 Android Auto</button></div>
+<div style="margin-top:12px;display:flex;gap:8px"><a id="nav" href="#" target="_blank" style="padding:8px 12px;background:#1c2024;color:#fff;border-radius:8px;text-decoration:none;font-size:13px">🧭 Maps</a> <button id="androidAutoBtn" style="padding:8px 12px;background:#1c2024;color:#fff;border-radius:8px;border:0;font-size:13px;cursor:pointer">🚗 Android Auto</button></div>
 </section>
 
-<section class="card"><div style="font-weight:700;margin-bottom:8px">Karte – VersaTiles colorful – 430 Grenzen orange</div><div id="map"></div><div id="mapBottomInfo" style="font-size:11px;padding:8px;background:#fff;border-top:1px solid #eee;font-weight:600">Klicke auf Haltestelle – MS003, GL055, Fachau 33544</div><div id="mapInfo" style="font-size:11px;padding:6px;color:#666;background:#f8f9fa">430 Grenzen orange · Fachau 33544 · START 🟢 ZIEL 🔴 · 533 Haltestellen</div></section>
+<section class="card"><div id="map"></div><div id="mapBottomInfo" style="font-size:11px;padding:8px;background:#fff;border-top:1px solid #eee;font-weight:600">Klicke auf eine Haltestelle</div></section>
 </main>
 </div>
 
@@ -494,7 +494,6 @@ const COMFORT=2.00;
 
 </script>
 <script>
-
 var colorMap={'MS':'#f1d400','SV':'#e59b00','LF':'#d64b27','FS':'#2877d1','GL':'#18a566'};
 var map=null;
 try{
@@ -509,11 +508,7 @@ function zoneFor(lon,lat,geojson){
 }
 
 var selected={from:null,to:null}, startMarker=null, endMarker=null;
-
-function updateBottom(text){
-  var el=document.getElementById('mapBottomInfo');
-  if(el) el.textContent=text;
-}
+function updateBottom(text){ var el=document.getElementById('mapBottomInfo'); if(el) el.textContent=text; }
 
 function addMarkers(){
   if(!map) return;
@@ -531,7 +526,7 @@ function addMarkers(){
         el.addEventListener('click', function(){ try{marker.setPopup(popup).togglePopup();}catch(e){} updateBottom(s.name+' ('+s.code+') · '+zname); });
       })(s,marker,el);
     }
-    updateBottom('Bereit – 533 Haltestellen, 430 Zonen inkl. Fachau 33544');
+    updateBottom('Bereit – klicke auf eine Haltestelle');
   }catch(e){ console.error(e); }
 }
 
@@ -542,7 +537,6 @@ function addZones(){
     map.addSource('zones',{type:'geojson', data:TARIFF_ZONES_FULL});
     map.addLayer({id:'zones-fill', type:'fill', source:'zones', paint:{'fill-color':'#ff6a00','fill-opacity':0.05}});
     map.addLayer({id:'zones-line', type:'line', source:'zones', paint:{'line-color':'#ff6a00','line-width':2,'line-opacity':0.9}});
-    var mi=document.getElementById('mapInfo'); if(mi) mi.textContent='430 Grenzen orange sichtbar ✓ – 33544 Fachau ✓';
   }catch(e){ console.error('Zonen', e); }
 }
 
@@ -592,7 +586,7 @@ if(calcBtn) calcBtn.addEventListener('click', function(){
   var a=selected.from, b=selected.to;
   if(!a||!b){ alert('Bitte Von und Nach wählen'); return; }
   var resEl=document.getElementById('result'); if(resEl) resEl.style.display='block';
-  var routeText=document.getElementById('routeText'); if(routeText) routeText.innerHTML='<b>Von:</b> '+a.name+' ('+a.code+')<br><b>Nach:</b> '+b.name+' ('+b.code+')<br><small>🟢 START grün / 🔴 ZIEL rot</small>';
+  var routeText=document.getElementById('routeText'); if(routeText) routeText.innerHTML='<b>Von:</b> '+a.name+' ('+a.code+')<br><b>Nach:</b> '+b.name+' ('+b.code+')';
   var zoneText=document.getElementById('zoneText'); if(zoneText) zoneText.textContent='Berechne...';
   var zonePath=document.getElementById('zonePath'); if(zonePath) zonePath.textContent='Berechne...';
   var fareBox=document.getElementById('fareBox'); if(fareBox) fareBox.textContent='Berechne...';
@@ -624,14 +618,14 @@ if(calcBtn) calcBtn.addEventListener('click', function(){
     var fahrzeit=hours>0 ? hours+'h '+(minRest>0?minRest+'min':'') : mins+' min';
 
     if(zoneText) zoneText.textContent=seq.length+' Zonen – '+km+' km – '+fahrzeit;
-    if(zonePath) zonePath.innerHTML=names+'<br><small style="color:#666">'+seq.join(' → ')+' – 33544=Fachau – '+km+' km</small>';
+    if(zonePath) zonePath.innerHTML=names+'<br><small style="color:#666">'+seq.join(' → ')+'</small>';
     if(kmBox){
-      kmBox.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div style="border:2px solid #ff6a00;background:#fff8f0;border-radius:12px;padding:12px;text-align:center"><div style="font-size:11px;color:#666;text-transform:uppercase">📏 Entfernung</div><div style="font-size:24px;font-weight:900;color:#e87c0a">'+km+' km</div><div style="font-size:11px;color:#666">via PKW Route</div></div><div style="border:2px solid #0055ff;background:#f0f6ff;border-radius:12px;padding:12px;text-align:center"><div style="font-size:11px;color:#666;text-transform:uppercase">⏱️ Fahrzeit</div><div style="font-size:24px;font-weight:900;color:#2877d1">'+fahrzeit+'</div><div style="font-size:11px;color:#666">PKW – ohne Verkehr</div></div></div>';
+      kmBox.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div style="border:2px solid #ff6a00;background:#fff8f0;border-radius:12px;padding:12px;text-align:center"><div style="font-size:11px;color:#666;text-transform:uppercase">📏 Entfernung</div><div style="font-size:24px;font-weight:900;color:#e87c0a">'+km+' km</div></div><div style="border:2px solid #0055ff;background:#f0f6ff;border-radius:12px;padding:12px;text-align:center"><div style="font-size:11px;color:#666;text-transform:uppercase">⏱️ Fahrzeit</div><div style="font-size:24px;font-weight:900;color:#2877d1">'+fahrzeit+'</div></div></div>';
     }
     if(fareBox){
       var price=TARIF_2026 && TARIF_2026.normal ? TARIF_2026.normal[seq.length-1] : null;
       var total=price!=null ? (price+2).toFixed(2).replace('.',',')+'€' : 'k.A.';
-      fareBox.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><div style="border:1px solid #eee;border-radius:10px;padding:10px"><b>Normal</b><br><b>'+(price!=null?price.toFixed(2).replace('.',',')+'€ + 2€ = '+total:'')+'</b></div><div style="border:1px solid #eee;border-radius:10px;padding:10px"><b>Senior</b><br>'+(TARIF_2026 && TARIF_2026.senior ? TARIF_2026.senior[seq.length-1].toFixed(2).replace('.',',')+'€ + 2€' : '')+'</div></div><div style="margin-top:8px;font-size:11px;color:#666">'+seq.length+' Zonen · '+km+' km · '+fahrzeit+' · Fachau inkl.</div>';
+      fareBox.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><div style="border:1px solid #eee;border-radius:10px;padding:10px"><b>Normal</b><br><b>'+(price!=null?price.toFixed(2).replace('.',',')+'€ + 2€ = '+total:'')+'</b></div><div style="border:1px solid #eee;border-radius:10px;padding:10px"><b>Senior</b><br>'+(TARIF_2026 && TARIF_2026.senior ? TARIF_2026.senior[seq.length-1].toFixed(2).replace('.',',')+'€ + 2€' : '')+'</div></div>';
     }
     var nav=document.getElementById('nav'); if(nav) nav.href='https://www.google.com/maps/dir/?api=1&origin='+a.lat+','+a.lon+'&destination='+b.lat+','+b.lon+'&travelmode=driving';
     if(map){
@@ -645,7 +639,6 @@ if(calcBtn) calcBtn.addEventListener('click', function(){
   }).catch(function(e){
     if(zoneText) zoneText.textContent='Fehler';
     if(zonePath) zonePath.textContent=e.message;
-    console.error(e);
   });
 });
 
@@ -654,13 +647,13 @@ function addScan(id, label){
   if(!btn) return;
   btn.addEventListener('click', function(){
     var input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.setAttribute('capture','environment');
-    input.onchange=function(ev){ var file=ev.target.files[0]; if(!file) return; var res=document.getElementById('ticketResult'); var status=document.getElementById('ocrStatus'); if(status) status.textContent=label+' erhalten: '+file.name; if(res){ res.style.display='block'; res.innerHTML='<b>'+label+':</b> '+file.name+'<br><small>✅ Bild erhalten</small>'; var img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;margin-top:8px;border-radius:8px'; img.src=URL.createObjectURL(file); res.appendChild(img); } }; input.click();
+    input.onchange=function(ev){ var file=ev.target.files[0]; if(!file) return; var res=document.getElementById('ticketResult'); var status=document.getElementById('ocrStatus'); if(status) status.textContent=label+' erhalten: '+file.name; if(res){ res.style.display='block'; res.innerHTML='<b>'+label+':</b> '+file.name; var img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;margin-top:8px;border-radius:8px'; img.src=URL.createObjectURL(file); res.appendChild(img); } }; input.click();
   });
 }
 addScan('scanTicketBtn','Ticket');
 addScan('scanLocationBtn','Ort');
 addScan('scanTimetableBtn','Fahrplan');
-addScan('scanKlimaticketBtn','Klimaticket – nur 2€ Zuschlag!');
+addScan('scanKlimaticketBtn','Klimaticket');
 
 var copyBtn=document.getElementById('copyBtn'); if(copyBtn) copyBtn.addEventListener('click', function(){ var a=selected.from,b=selected.to; if(!a||!b){alert('Bitte wählen'); return;} var t='Von: '+a.name+' ('+a.code+')\nNach: '+b.name+' ('+b.code+')'; if(navigator.clipboard) navigator.clipboard.writeText(t).then(function(){alert('Kopiert');}); else alert(t); });
 var offBtn=document.getElementById('officialBtn'); if(offBtn) offBtn.addEventListener('click', function(){ window.open('https://pa2.kaerntner-linien.at/preisauskunft','_blank'); });
@@ -668,8 +661,7 @@ var andBtn=document.getElementById('androidAutoBtn'); if(andBtn) andBtn.addEvent
 var locFrom=document.getElementById('locFrom'); if(locFrom) locFrom.addEventListener('click', function(){ var st=document.getElementById('locFromStatus'); if(st) st.textContent='📍 Standort...'; if(!navigator.geolocation){ if(st) st.textContent='Kein GPS'; return; } navigator.geolocation.getCurrentPosition(function(pos){ var lat=pos.coords.latitude, lon=pos.coords.longitude; var best=null, bd=Infinity; for(var i=0;i<stops.length;i++){ var s=stops[i]; var d=Math.sqrt((s.lat-lat)*(s.lat-lat)+(s.lon-lon)*(s.lon-lon)); if(d<bd){bd=d; best=s;}} if(best){ selected.from=best; document.getElementById('from').value=best.name; if(st) st.textContent='✅ '+best.name; updateBottom('Von: '+best.name); if(map) map.flyTo({center:[best.lon,best.lat], zoom:14}); } }, function(e){ if(st) st.textContent='❌ '+e.message; }, {enableHighAccuracy:true, timeout:10000}); });
 var locTo=document.getElementById('locTo'); if(locTo) locTo.addEventListener('click', function(){ var st=document.getElementById('locToStatus'); if(st) st.textContent='📍 Standort...'; if(!navigator.geolocation){ if(st) st.textContent='Kein GPS'; return; } navigator.geolocation.getCurrentPosition(function(pos){ var lat=pos.coords.latitude, lon=pos.coords.longitude; var best=null, bd=Infinity; for(var i=0;i<stops.length;i++){ var s=stops[i]; var d=Math.sqrt((s.lat-lat)*(s.lat-lat)+(s.lon-lon)*(s.lon-lon)); if(d<bd){bd=d; best=s;}} if(best){ selected.to=best; document.getElementById('to').value=best.name; if(st) st.textContent='✅ '+best.name; updateBottom('Nach: '+best.name); if(map) map.flyTo({center:[best.lon,best.lat], zoom:14}); } }, function(e){ if(st) st.textContent='❌ '+e.message; }, {enableHighAccuracy:true, timeout:10000}); });
 
-console.log('✅ RufZu mit KM + FAHRZEIT geladen – MS003->GL055 + Fachau 33544');
-
+console.log('✅ RufZu CLEAN – ohne verbose Texte – mit KM + Fahrzeit');
 </script>
 </body>
 </html>
