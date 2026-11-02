@@ -3,37 +3,153 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RufZu VOLL DESIGN FINAL - 533 + 430 Zonen + Grenzen + Fahnen</title>
+<title>RufZu - 533 Haltestellen - VersaTiles colorful</title>
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <style>
-:root{--orange:#f7941e;--ink:#1c2024;--muted:#6a737b}
-*{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#15181c;color:#fff}
-.app{max-width:780px;margin:auto;background:#15181c;min-height:100vh}
-.hero{background:#fff;color:#1c2024;padding:18px 18px 50px;border-bottom:4px solid var(--orange)} 
-.hero h1{font-size:22px;margin:14px 0 6px} .hero p{color:#6a737b;font-size:13px;margin:0}
-.card{background:#fff;color:#222;border-radius:20px;padding:16px;margin:-28px 12px 12px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
-.label{font-size:11px;font-weight:800;color:#6a737b;text-transform:uppercase;margin:8px 0 4px}
-input{width:100%;padding:12px;border-radius:12px;border:1px solid #dfe4e8;font-weight:700}
-button{border:0;cursor:pointer} .calc{width:100%;padding:14px;background:var(--orange);color:#fff;font-weight:900;border-radius:12px;margin-top:12px;text-transform:uppercase}
-.result{background:#fff;color:#222;border-radius:20px;margin:12px;overflow:hidden;display:none} .result.show{display:block}
-.zonehero{background:linear-gradient(135deg,#f7941e,#e87c0a);padding:16px;color:#fff} .zonebig{font-size:32px;font-weight:900}
-#map{width:100%;height:420px;background:#f8f4f0}
-.marker-dot{width:11px;height:11px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3)}
-.flag-start{width:36px;height:36px;background:#00c853;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;box-shadow:0 3px 12px rgba(0,0,0,.4);font-size:18px}
-.flag-end{width:36px;height:36px;background:#d32f2f;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;box-shadow:0 3px 12px rgba(0,0,0,.4);font-size:18px}
-.flag-label{background:rgba(0,0,0,.75);color:#fff;font-size:10px;font-weight:900;padding:2px 6px;border-radius:6px;white-space:nowrap;margin-top:2px;text-align:center}
-.suggestions{background:#fff;border:1px solid #ddd;border-radius:12px;max-height:240px;overflow:auto;margin-top:4px} .sug{padding:10px 12px;border-bottom:1px solid #eee;cursor:pointer} .sug:last-child{border:0} .sug b{font-size:13px} .sug span{font-size:11px;color:#666;display:block}
-.footer{padding:16px;text-align:center;color:#8a939c;font-size:11px}
+:root{--orange:#f7941e;--orange2:#e87c0a;--ink:#1c2024;--muted:#6a737b;--paper:#fff;--line:#e9edf1;--soft:#fff7df;--green:#16865a;--shadow:0 12px 35px rgba(28,34,40,.12);--radius:22px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:#f3f5f7}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:#f3f5f7;min-height:100vh}
+button,input{font:inherit}
+button{cursor:pointer;border:0}
+.app{max-width:760px;margin:auto;background:#f3f5f7;min-height:100vh;overflow:hidden}
+.hero{position:relative;background:#fff;padding:22px 20px 66px;color:var(--ink);border-bottom:4px solid var(--orange);overflow:hidden}
+.hero:after{content:"";position:absolute;left:-12%;right:-12%;bottom:-80px;height:130px;background:#f3f5f7;border-radius:50% 50% 0 0/100% 100% 0 0}
+.brand{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2;gap:12px}
+.brandtext{display:flex;align-items:center;gap:12px;min-width:0}
+.brandmark{width:64px;height:44px;flex-shrink:0;display:block}
+.brandmark svg{width:100%;height:100%;display:block}
+.ruf{font-size:32px;font-weight:900;font-style:italic;letter-spacing:-1.2px;color:var(--ink);white-space:nowrap}
+.ruf .zu{color:var(--orange)}
+.tag{font-size:11.5px;font-weight:700;color:var(--muted);margin-top:5px;letter-spacing:.2px;text-transform:uppercase}
+.phone{font-weight:900;font-size:13px;text-align:right;color:var(--ink);line-height:1.3;flex-shrink:0}
+.phone a{color:inherit;text-decoration:none;display:block}
+.phone .lbl{display:block;font-size:10px;color:var(--orange);letter-spacing:.6px;text-transform:uppercase}
+.hero h1{position:relative;z-index:2;font-size:26px;line-height:1.15;margin:28px 0 8px;font-weight:900;max-width:640px;color:var(--ink)}
+.hero p{position:relative;z-index:2;margin:0;max-width:610px;font-size:14.5px;line-height:1.5;color:var(--muted);font-weight:600}
+.content{padding:0 14px 30px;position:relative;z-index:3}
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.04);padding:18px;margin-top:-30px}
+.section-title{font-weight:900;text-transform:uppercase;letter-spacing:.5px;font-size:13px;margin-bottom:13px;color:var(--ink);display:flex;align-items:center;gap:8px}
+.section-title:before{content:"";width:22px;height:3px;background:var(--orange);border-radius:2px}
+.field{position:relative;margin-bottom:12px}
+.label{font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin:0 0 5px 4px}
+.inputwrap{display:flex;align-items:center;background:#f7f8f9;border:1px solid #dfe4e8;border-radius:15px;min-height:58px;transition:border-color .15s,background .15s}
+.inputwrap:focus-within{border-color:var(--orange);background:#fffaf2}
+.pin{width:42px;text-align:center;font-size:18px;color:var(--orange)}
+.pin.to{color:var(--ink)}
+.inputwrap input{flex:1;min-width:0;border:0;background:transparent;outline:0;padding:15px 5px;font-weight:700;color:var(--ink)}
+.clear{background:transparent;color:#8b949c;font-size:22px;padding:10px 14px}
+.suggestions{position:absolute;left:0;right:0;top:81px;background:#fff;border:1px solid #dfe4e8;border-radius:15px;box-shadow:0 15px 35px rgba(0,0,0,.16);z-index:50;overflow:hidden;max-height:300px;overflow-y:auto}
+.suggestions[hidden]{display:none}
+.sug{padding:13px 15px;border-bottom:1px solid #eef0f2;display:flex;flex-direction:column;gap:3px}
+.sug:last-child{border-bottom:0}
+.sug b{font-size:14px}
+.sug span{font-size:12px;color:#7a838b}
+.calc{width:100%;min-height:58px;border-radius:16px;background:var(--orange);color:#fff;font-weight:900;letter-spacing:.4px;font-size:15.5px;box-shadow:0 8px 20px rgba(247,148,30,.35);margin-top:10px;text-transform:uppercase}
+.calc:active{transform:translateY(1px)}
+.subactions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
+.secondary{min-height:46px;border:1px solid #dfe4e8;background:#fff;border-radius:13px;font-weight:800;color:#3d454c;font-size:13px}
+.result{display:none;margin-top:14px}
+.resultcard{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.resulthead{background:var(--ink);color:#fff;padding:19px}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1px;opacity:.7;font-weight:900;color:var(--orange)}
+.route{margin-top:8px;font-size:14px;line-height:1.6}
+.route b{font-weight:900}
+.zonehero{background:linear-gradient(135deg,#f7941e,#e87c0a);padding:20px;color:#fff}
+.zonebig{font-size:38px;font-weight:950;letter-spacing:-1px}
+.zonepath{margin-top:8px;font-size:13px;font-weight:900;word-break:break-word}
+.distance{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+.distance strong{font-size:21px}
+.distance small{display:block;color:var(--muted);line-height:1.35;margin-top:3px}
+.info{padding:14px 20px;font-size:12px;color:#55606a;background:#fafbfc}
+.good{color:var(--green);font-weight:800;background:#edf9f3;border:1px solid #cfeedd;padding:11px 12px;border-radius:12px}
+.warn{color:#8a5b00;background:#fff6dd;border:1px solid #f0d58b;padding:11px 12px;border-radius:12px}
+.farebox{padding:16px 20px}
+.fare-title{font-weight:900;margin-bottom:12px}
+.faregrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fareitem{border:1px solid #e4e8eb;border-radius:15px;padding:12px;background:#fff}
+.fareitem>b{font-size:13px}
+.fareline{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:11px;color:#69727a}
+.fareline strong{font-size:13px;color:#222}
+.fareline.total{border-top:1px solid #edf0f2;padding-top:8px;color:#222}
+.fareline.total strong{font-size:16px;color:var(--orange)}
+.muted{font-size:11px;color:#747d85;line-height:1.45}
+.resultactions{padding:0 20px 20px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.primarylink,.orangeLink{display:flex;align-items:center;justify-content:center;text-decoration:none;min-height:52px;border-radius:14px;font-weight:900}
+.primarylink{background:var(--ink);color:#fff}
+.orangeLink{background:var(--orange);color:#fff}
+.mapcard{margin-top:14px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.maphead{padding:15px 18px;font-weight:900;display:flex;justify-content:space-between}
+.maphead span{font-size:11px;color:#7b848c;font-weight:700}
+.map{height:360px}
+.footer{padding:22px 18px 34px;text-align:center;color:#747d85;font-size:11px;line-height:1.5}
+.footer b{color:#30373d}
+.official{color:#30373d;text-decoration:underline}
+.routeZones{font-weight:900;line-height:1.5}
+.zonechips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.zonechip{background:rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:900;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.5)}
+.leaflet-control-attribution{font-size:9px}
+.vehicle-hero{margin-top:12px;background:linear-gradient(135deg,#fff 0%,#fffaf2 100%);border:1px solid #f0e6d6;border-radius:20px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px;overflow:hidden;box-shadow:0 4px 20px rgba(247,148,30,.08)}
+.vehicle-photo{width:100%;max-width:320px;height:180px;border-radius:16px;background:#f3f5f7;display:flex;align-items:center;justify-content:center;font-size:64px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.vehicle-photo img{width:100%;height:100%;object-fit:cover;display:none}
+.vehicle-copy{text-align:center}
+.vehicle-copy b{display:block;font-size:17px;color:var(--ink)}
+.vehicle-copy span{display:block;font-size:13px;color:var(--muted);margin-top:6px;line-height:1.4}
+.scanrow{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
+.scanbtn{min-height:50px;border-radius:13px;background:#fff;border:2px solid var(--orange);color:var(--orange);font-weight:900;font-size:13px;line-height:1.15;padding:6px 8px}
+.scanbtn.ticket{border-color:var(--ink);color:var(--ink)}
+.ocrstatus{margin-top:8px;font-size:12px;color:#66717a;line-height:1.4}
+.ocrstatus.good{color:#16865a}
+.ocrstatus.warn{color:#8a5b00}
+.ticketresult{margin-top:10px;border:1px solid #e4e8eb;border-radius:14px;padding:12px;background:#fafbfc;font-size:12.5px;line-height:1.5;display:none}
+.ticketresult.show{display:block}
+.ticketresult b{color:var(--ink)}
+.ticketresult .zonetag{display:inline-block;background:var(--orange);color:#fff;font-weight:900;font-size:11px;padding:3px 8px;border-radius:999px;margin:2px 3px 2px 0}
+.ticketresult.match{background:#edf9f3;border-color:#cfeedd}
+.ticketresult.miss{background:#fff6dd;border-color:#f0d58b}
+.klimaticket-info{margin-top:10px;padding:12px;background:#fff7df;border-radius:12px;border:1px solid #f0d58b;font-size:12px;line-height:1.5}
+.klimaticket-info b{color:var(--orange)}
+@media(min-width:700px){.hero{padding-left:34px;padding-right:34px}.content{padding-left:24px;padding-right:24px}.hero h1{font-size:30px}.map{height:430px}.ruf{font-size:36px}.brandmark{width:72px;height:50px}}
+@media(max-width:430px){.ruf{font-size:26px}.phone{font-size:11px}.phone .lbl{font-size:9px}.hero h1{font-size:22px}.hero{padding-top:18px}.faregrid{grid-template-columns:1fr}.resultactions,.subactions{grid-template-columns:1fr 1fr}.map{height:320px}.vehicle-photo{max-width:100%;height:150px}.scanrow{grid-template-columns:1fr}}
+
+/* === NEU: Dunkel-Orange Design mit echtem Bus-R === */
+html{background:#15181c}
+body{background:#15181c}
+.app{background:#15181c}
+.hero{background:#fff;border-bottom:4px solid #f7941e}
+.hero:after{background:#15181c}
+.content{background:transparent}
+.card{box-shadow:0 12px 35px rgba(0,0,0,.35), 0 0 0 1px rgba(247,148,30,.08); border:none}
+.brandmark{width:76px;height:52px;flex-shrink:0;display:block}
+.brandmark img{width:100%;height:100%;object-fit:contain;display:block}
+.locbtn{width:100%;min-height:42px;border:1px dashed #f7941e;background:#2a2f36;border-radius:12px;font-weight:800;color:#ffb24d;font-size:12.5px;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:6px}
+.locbtn:active{background:#3a414b}
+.locstatus{font-size:11.5px;color:#4ade80;font-weight:700;margin-top:6px;display:none;line-height:1.4}
+.locstatus.show{display:block}
+.locstatus.warn{color:#fbbf24}
+.androidbtn{width:100%;min-height:56px;border-radius:14px;background:#0f9d58;color:#fff;font-weight:900;letter-spacing:.3px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;box-shadow:0 8px 20px rgba(15,157,88,.35)}
+.androidbtn:active{transform:translateY(1px)}
+.androidbtn:disabled{opacity:.5}
+.vehicle-hero{border:1px solid rgba(247,148,30,.15)}
+.vehicle-photo{border-radius:16px;overflow:hidden}
+.footer{color:#8a939c}
+.footer a{color:#ffb24d}
+
 </style>
 <style>
 .marker-dot{width:11px;height:11px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 .flag-start{width:36px;height:36px;background:#00c853;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;box-shadow:0 3px 12px rgba(0,0,0,.4);font-size:18px}
 .flag-end{width:36px;height:36px;background:#d32f2f;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;box-shadow:0 3px 12px rgba(0,0,0,.4);font-size:18px}
 .flag-label{background:rgba(0,0,0,.75);color:#fff;font-size:10px;font-weight:900;padding:2px 6px;border-radius:6px;white-space:nowrap;margin-top:2px;text-align:center}
-.suggestions{background:#fff;border:1px solid #ddd;border-radius:12px;max-height:240px;overflow:auto;margin-top:4px;position:absolute;left:0;right:0;z-index:99} .sug{padding:10px 12px;border-bottom:1px solid #eee;cursor:pointer} .sug b{font-size:13px} .sug small{font-size:11px;color:#666}
 .field{position:relative}
+#map{height:420px}
+.vehicle-hero{margin:12px;background:linear-gradient(135deg,#fff 0%,#fffaf2 100%);border:1px solid rgba(247,148,30,.15);border-radius:20px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px;overflow:hidden;box-shadow:0 4px 20px rgba(247,148,30,.08)}
+.vehicle-photo{width:100%;max-width:320px;height:180px;border-radius:16px;background:#f3f5f7;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.vehicle-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.vehicle-copy{text-align:center} .vehicle-copy b{display:block;font-size:17px;color:#1c2024} .vehicle-copy span{display:block;font-size:13px;color:#6a737b;margin-top:6px;line-height:1.4}
 </style>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 <script src="rufzu-daten-final.js"></script>
 </head>
 <body>
@@ -41,36 +157,53 @@ button{border:0;cursor:pointer} .calc{width:100%;padding:14px;background:var(--o
 <header class="hero">
   <div class="brand">
     <div class="brandtext">
-      <div class="brandmark"><img src="rufzu_R_logo_transparent.png" alt="RufZu Logo" style="width:76px;height:52px;object-fit:contain" onerror="this.style.display='none'"></div>
-      <div><div class="ruf">Ruf:<span class="zu">Zu</span></div><div class="tag">Rufbus Zollfeld & Umgebung – 533 Haltestellen – VOLL DESIGN mit Grenzen</div></div>
+      <div class="brandmark"><img src="rufzu_R_logo_transparent.png" alt="Logo" style="width:76px;height:52px;object-fit:contain"></div>
+      <div><div class="ruf">Ruf:<span class="zu">Zu</span></div><div class="tag">Rufbus Zollfeld & Umgebung – 533 Haltestellen</div></div>
     </div>
     <div class="phone"><span class="lbl">Anrufen</span><a href="tel:+43421293083">04212 / 93083</a></div>
   </div>
   <h1>Gut zu wissen: Ruf:Zu bringt dich zuverlässig zu deinen Anschlussverbindungen.</h1>
-  <p>Jetzt mit vollständigem Design, 533 Original Haltestellen, allen 430 Tarifzonen-Grenzen orange sichtbar, VersaTiles colorful Karte und START/ZIEL Fahnen.</p>
+  <p>533 Haltestellen original, 430 Tarifzonen, VersaTiles colorful Karte mit allen Grenzen orange, START grün / ZIEL rot, Abfotografieren & Navigation.</p>
 </header>
+
 <main class="content">
+  <div class="vehicle-hero">
+    <div class="vehicle-photo"><img src="rufzu_8sitzer.png" alt="Bus" onerror="this.parentElement.innerHTML='🚌'"></div>
+    <div class="vehicle-copy"><b>Ruf:Zu 8-Sitzer</b><span>Komfortabel, barrierefrei, mit Klimaanlage – dein Rufbus für Zollfeld & Umgebung</span></div>
+  </div>
+
   <section class="card">
     <div class="section-title">Fahrt berechnen – 533 Haltestellen</div>
     <div class="field" style="margin-top:14px">
       <div class="label">Von · Startpunkt</div>
       <div class="inputwrap"><div class="pin">●</div><input id="from" autocomplete="off" placeholder="Start-Haltestelle suchen …"><button class="clear" id="clearFrom">×</button></div>
       <div class="suggestions" id="fromSug" hidden></div>
+      <button class="locbtn" id="locFrom" type="button">📍 Standort als Von nutzen</button>
+      <div class="locstatus" id="locFromStatus"></div>
     </div>
     <div class="field">
       <div class="label">Nach · Haltestelle</div>
       <div class="inputwrap"><div class="pin to">◎</div><input id="to" autocomplete="off" placeholder="Haltestelle suchen …"><button class="clear" id="clearTo">×</button></div>
       <div class="suggestions" id="toSug" hidden></div>
+      <button class="locbtn" id="locTo" type="button">📍 Standort als Nach nutzen</button>
+      <div class="locstatus" id="locToStatus"></div>
     </div>
     <button class="calc" id="calcBtn">Tarif & Route berechnen</button>
-    <div class="subactions"><button class="secondary" id="copyBtn">↗ Von / Nach kopieren</button><button class="secondary" onclick="window.open('https://pa2.kaerntner-linien.at/preisauskunft','_blank')">€ Offizielle Preisauskunft</button></div>
+    <div class="scanrow">
+      <button class="scanbtn" id="scanTicketBtn">📸 Ticket abfotografieren</button>
+      <button class="scanbtn ticket" id="scanLocationBtn">📍 Ort abfotografieren</button>
+    </div>
+    <div class="ocrstatus" id="ocrStatus"></div>
+    <div class="ticketresult" id="ticketResult"></div>
+    <div class="subactions"><button class="secondary" id="copyBtn">↗ Von / Nach kopieren</button><button class="secondary" id="officialBtn">€ Offizielle Preisauskunft</button></div>
+    <div class="klimaticket-info"><b>🎫 Klimaticket-Vorteil:</b> Mit KlimaTicket nur 2,00 € Komfortzuschlag.</div>
   </section>
 
   <section class="result" id="result">
     <div class="resultcard">
       <div class="resulthead"><div class="eyebrow">Tarifberechnung</div><div class="route" id="routeText"></div></div>
       <div class="zonehero"><div class="zonebig" id="zoneText">—</div><div class="zonepath" id="zonePath">Noch keine Fahrt berechnet.</div></div>
-      <div class="distance"><div><strong id="distanceText">—</strong><small id="distanceNote">Noch keine Route – Grenzen sind orange sichtbar</small></div></div>
+      <div class="distance"><div><strong id="distanceText">—</strong><small id="distanceNote">Grenzen orange sichtbar</small></div></div>
       <div class="info" id="zoneMessage"></div>
       <div class="farebox" id="fareBox"></div>
       <div class="resultactions"><a class="primarylink" id="nav" href="#" target="_blank">🧭 In Maps navigieren</a><button class="orangeLink" id="androidAutoBtn" type="button">🚗 Android Auto</button></div>
@@ -79,12 +212,7 @@ button{border:0;cursor:pointer} .calc{width:100%;padding:14px;background:var(--o
 
   <section class="mapcard"><div class="maphead">Karte – VersaTiles colorful – alle 430 Grenzen orange <span id="mapInfo">533 Haltestellen · START 🟢 ZIEL 🔴</span></div><div class="map" id="map"></div></section>
 
-  <div class="vehicle-hero">
-    <div class="vehicle-photo"><img src="rufzu_8sitzer.png" alt="RufZu Bus" style="display:block;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'; this.parentElement.textContent='🚌'"></div>
-    <div class="vehicle-copy"><b>Ruf:Zu 8-Sitzer</b><span>Komfortabel, barrierefrei, mit Klimaanlage – dein Rufbus für Zollfeld & Umgebung</span></div>
-  </div>
-
-  <footer class="footer"><b>Ruf:Zu</b> – 533 Haltestellen original, 430 Zonen, alle Grenzen orange, VersaTiles colorful, START grüne Fahne 🚩 ZIEL rote Fahne 🏁<br><a class="official" href="https://pa2.kaerntner-linien.at/preisauskunft" target="_blank">Offizielle Preisauskunft Kärntner Linien</a></footer>
+  <footer class="footer"><b>Ruf:Zu</b> – 533 Haltestellen original, 430 Zonen, alle Grenzen orange, VersaTiles colorful, START 🚩 ZIEL 🏁, Abfotografieren, Navigation<br><a class="official" href="https://pa2.kaerntner-linien.at/preisauskunft" target="_blank">Offizielle Preisauskunft</a></footer>
 </main>
 </div>
 
