@@ -25,21 +25,41 @@ function zoneFor(lon,lat, geojson){
 let selected={from:null,to:null}, startMarker=null, endMarker=null;
 function setup(id){
   const inp=document.getElementById(id), box=document.getElementById(id+'Sug');
+  if(!inp || !box) return;
   inp.addEventListener('input', ()=>{
     selected[id]=null;
-    const q=inp.value.toLowerCase();
-    if(!q){box.innerHTML='';return;}
-    const m=stops.filter(s=>s.name.toLowerCase().includes(q)).slice(0,15);
+    const q=inp.value.toLowerCase().trim();
+    if(!q){box.innerHTML=''; box.hidden=true; return;}
+    const m=stops.filter(s=>s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q)).slice(0,20);
+    if(m.length===0){box.innerHTML='<div class="sug">Keine Treffer</div>'; box.hidden=false; return;}
     box.innerHTML=m.map(s=>`<div class="sug" data-i="${stops.indexOf(s)}"><b>${s.name}</b><br><small>${s.code}</small></div>`).join('');
+    box.hidden=false;
     box.querySelectorAll('.sug').forEach(d=>d.onclick=()=>{
       const i=Number(d.dataset.i);
       selected[id]=stops[i];
       inp.value=stops[i].name;
-      box.innerHTML='';
+      box.innerHTML=''; box.hidden=true;
       try{map.flyTo({center:[stops[i].lon,stops[i].lat], zoom:14});}catch(e){}
     });
   });
+  inp.addEventListener('focus', ()=>{
+    if(inp.value.trim().length>0){
+      inp.dispatchEvent(new Event('input'));
+    }
+  });
+  // Auto-select if exact code matches
+  inp.addEventListener('blur', ()=>{
+    setTimeout(()=>{
+      const val=inp.value.trim();
+      if(!val) return;
+      if(!selected[id]){
+        const exact=stops.find(s=>s.code.toLowerCase()===val.toLowerCase() || s.name.toLowerCase()===val.toLowerCase());
+        if(exact){selected[id]=exact;}
+      }
+    },200);
+  });
 }
+
 setup('from'); setup('to');
 
 async function getRoute(a,b){const q=`${a.lon},${a.lat};${b.lon},${b.lat}`; const r=await fetch(`https://router.project-osrm.org/route/v1/driving/${q}?overview=full&geometries=geojson`); const j=await r.json(); return j.routes[0];}
