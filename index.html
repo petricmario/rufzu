@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RufZu – Zollfeld</title>
+<title>RufZu – Zollfeld – mit OCR Fahrplan Auto-Fill</title>
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <style>
 :root{--orange:#f7941e;--ink:#1c2024;--muted:#6a737b;--bg:#f5f6f7;--card:#fff;--border:#e6e8eb}
@@ -13,8 +13,10 @@ body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)
 .suggestions{position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--border);border-radius:10px;max-height:240px;overflow:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.15)} .sug{padding:10px;border-bottom:1px solid #eee;cursor:pointer} .sug:hover{background:#f8f9fa}
 .calc{width:100%;padding:14px;background:var(--orange);color:#fff;font-weight:800;border:0;border-radius:10px;margin-top:12px;cursor:pointer;font-size:16px} .scanrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px} .scanbtn{padding:12px;background:#fff;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer}
 #map{width:100%;height:420px;background:#e8ecf0;position:relative} .marker-dot{width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);cursor:pointer} .flag-start{width:34px;height:34px;background:#00c853;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900} .flag-end{width:34px;height:34px;background:#d32f2f;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900}
+.ocr-box{margin-top:10px;padding:10px;background:#f0f6ff;border:1px solid #b3d4ff;border-radius:10px;font-size:12px;display:none}
 </style>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -27,8 +29,10 @@ body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)
 <div style="margin-top:12px">Nach: <div style="position:relative"><div class="inputwrap"><input id="to" placeholder="Haltestelle eingeben"><button class="clear" id="clearTo">×</button></div><div class="suggestions" id="toSug" hidden></div></div><button id="locTo" style="margin-top:6px;padding:6px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer">📍 Standort Nach</button><div id="locToStatus" style="font-size:11px;margin-top:4px"></div></div>
 <button class="calc" id="calcBtn">Tarif berechnen</button>
 <div class="scanrow"><button class="scanbtn" id="scanTicketBtn">📸 Ticket</button><button class="scanbtn" id="scanLocationBtn">📍 Ort</button></div>
-<div class="scanrow"><button class="scanbtn" id="scanTimetableBtn">📅 Fahrplan</button><button class="scanbtn" id="scanKlimaticketBtn">🎫 Klimaticket</button></div>
-<div id="ocrStatus" style="font-size:12px;margin-top:8px;color:#666"></div><div id="ticketResult" style="display:none;margin-top:8px;padding:10px;background:#f8f9fa;border-radius:10px"></div>
+<div class="scanrow"><button class="scanbtn" id="scanTimetableBtn">📅 Fahrplan – Auto-Fill Von/Nach</button><button class="scanbtn" id="scanKlimaticketBtn">🎫 Klimaticket</button></div>
+<div id="ocrStatus" style="font-size:12px;margin-top:8px;color:#666"></div>
+<div id="ocrBox" class="ocr-box"><b>📖 OCR Ergebnis:</b><div id="ocrText" style="margin-top:6px;white-space:pre-wrap;background:#fff;padding:8px;border-radius:6px;max-height:150px;overflow:auto"></div><div id="ocrMatches" style="margin-top:8px"></div></div>
+<div id="ticketResult" style="display:none;margin-top:8px;padding:10px;background:#f8f9fa;border-radius:10px"></div>
 <div style="margin-top:10px;display:flex;gap:8px"><button id="copyBtn" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer">↗ Kopieren</button> <button id="officialBtn" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer">€ Offiziell</button></div>
 </section>
 
@@ -642,12 +646,104 @@ if(calcBtn) calcBtn.addEventListener('click', function(){
   });
 });
 
+// OCR Funktion für Fahrplan - Auto-Fill Von/Nach
+async function doOCR(file, type){
+  var status=document.getElementById('ocrStatus');
+  var ocrBox=document.getElementById('ocrBox');
+  var ocrTextEl=document.getElementById('ocrText');
+  var ocrMatchesEl=document.getElementById('ocrMatches');
+  var ticketResult=document.getElementById('ticketResult');
+  
+  if(status) status.textContent='🔍 OCR läuft – lese Text aus Bild...';
+  if(ocrBox) ocrBox.style.display='block';
+  if(ocrTextEl) ocrTextEl.textContent='Analysiere Bild...';
+  if(ticketResult){ ticketResult.style.display='block'; ticketResult.innerHTML='<b>'+type+':</b> '+file.name+'<br><small>OCR läuft...</small>'; var img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;margin-top:8px;border-radius:8px'; img.src=URL.createObjectURL(file); ticketResult.appendChild(img); }
+  
+  try{
+    var worker=await Tesseract.createWorker('deu+eng');
+    var ret=await worker.recognize(file);
+    var text=ret.data.text;
+    await worker.terminate();
+    
+    if(ocrTextEl) ocrTextEl.textContent=text;
+    if(status) status.textContent='✅ Text erkannt – suche Haltestellen...';
+    
+    // Suche Haltestellen im Text
+    var found=[];
+    var lower=text.toLowerCase();
+    for(var i=0;i<stops.length;i++){
+      var s=stops[i];
+      // Suche nach Code (z.B. MS003, FS074) oder Name Teil
+      if(lower.indexOf(s.code.toLowerCase())>=0){ found.push(s); }
+      else if(s.name.length>4 && lower.indexOf(s.name.toLowerCase().substring(0,8))>=0){ found.push(s); }
+    }
+    // Deduplizieren
+    var unique={}; var uniqFound=[];
+    for(var j=0;j<found.length;j++){ if(!unique[found[j].code]){ unique[found[j].code]=true; uniqFound.push(found[j]); } }
+    found=uniqFound.slice(0,10);
+    
+    if(ocrMatchesEl){
+      if(found.length===0){
+        ocrMatchesEl.innerHTML='<div style="color:#d32f2f">Keine Haltestellen im Text gefunden. Tippe manuell oder fotografiere klarer.</div>';
+      } else {
+        var html='<div style="color:#00c853;font-weight:700">✅ '+found.length+' Haltestellen gefunden:</div><div style="margin-top:8px;display:grid;gap:6px">';
+        for(var k=0;k<found.length;k++){
+          var s=found[k];
+          html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px;background:#fff;border-radius:6px"><span><b>'+s.name+'</b> ('+s.code+')</span><span><button onclick="setFrom(\''+s.code+'\')" style="padding:4px 8px;background:#00c853;color:#fff;border:0;border-radius:4px;font-size:11px;margin-right:4px">Als Von</button><button onclick="setTo(\''+s.code+'\')" style="padding:4px 8px;background:#d32f2f;color:#fff;border:0;border-radius:4px;font-size:11px">Als Nach</button></span></div>';
+        }
+        html+='</div>';
+        if(found.length>=2){
+          html+='<div style="margin-top:10px"><button onclick="autoFillFromOCR()" style="width:100%;padding:10px;background:#f7941e;color:#fff;border:0;border-radius:8px;font-weight:700">🚀 Automatisch Von/Nach füllen (erste 2 Treffer)</button></div>';
+          window._ocrFound=found;
+        }
+        ocrMatchesEl.innerHTML=html;
+      }
+    }
+    
+    if(found.length>=2 && type==='Fahrplan'){
+      // Auto-Fill automatisch bei Fahrplan
+      if(status) status.textContent='✅ Fahrplan erkannt – fülle Von/Nach automatisch...';
+      selected.from=found[0]; selected.to=found[1];
+      document.getElementById('from').value=found[0].name;
+      document.getElementById('to').value=found[1].name;
+      updateBottom('Auto-Fill: Von '+found[0].name+' → Nach '+found[1].name);
+      if(map) map.flyTo({center:[found[0].lon,found[0].lat], zoom:13});
+      setTimeout(function(){ document.getElementById('calcBtn').click(); }, 500);
+    }
+    
+  }catch(e){
+    if(status) status.textContent='❌ OCR Fehler: '+e.message;
+    if(ocrTextEl) ocrTextEl.textContent='Fehler: '+e.message;
+    console.error(e);
+  }
+}
+
+window.autoFillFromOCR=function(){
+  var found=window._ocrFound;
+  if(!found || found.length<2) return;
+  selected.from=found[0]; selected.to=found[1];
+  document.getElementById('from').value=found[0].name;
+  document.getElementById('to').value=found[1].name;
+  updateBottom('Auto-Fill: Von '+found[0].name+' → Nach '+found[1].name);
+  document.getElementById('calcBtn').click();
+};
+
 function addScan(id, label){
   var btn=document.getElementById(id);
   if(!btn) return;
   btn.addEventListener('click', function(){
     var input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.setAttribute('capture','environment');
-    input.onchange=function(ev){ var file=ev.target.files[0]; if(!file) return; var res=document.getElementById('ticketResult'); var status=document.getElementById('ocrStatus'); if(status) status.textContent=label+' erhalten: '+file.name; if(res){ res.style.display='block'; res.innerHTML='<b>'+label+':</b> '+file.name; var img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;margin-top:8px;border-radius:8px'; img.src=URL.createObjectURL(file); res.appendChild(img); } }; input.click();
+    input.onchange=function(ev){
+      var file=ev.target.files[0]; if(!file) return;
+      if(id==='scanTimetableBtn' || id==='scanTicketBtn' || id==='scanLocationBtn'){
+        doOCR(file, label);
+      } else {
+        // Klimaticket - nur Bild zeigen
+        var res=document.getElementById('ticketResult'); var status=document.getElementById('ocrStatus');
+        if(status) status.textContent='🎫 '+label+' erhalten: '+file.name+' – ✅ Klimaticket erkannt – nur 2€!';
+        if(res){ res.style.display='block'; res.innerHTML='<b>'+label+':</b> '+file.name+'<br><small>✅ Klimaticket erkannt – nur 2€ Zuschlag!</small>'; var img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;margin-top:8px;border-radius:8px'; img.src=URL.createObjectURL(file); res.appendChild(img); }
+      }
+    }; input.click();
   });
 }
 addScan('scanTicketBtn','Ticket');
@@ -661,7 +757,7 @@ var andBtn=document.getElementById('androidAutoBtn'); if(andBtn) andBtn.addEvent
 var locFrom=document.getElementById('locFrom'); if(locFrom) locFrom.addEventListener('click', function(){ var st=document.getElementById('locFromStatus'); if(st) st.textContent='📍 Standort...'; if(!navigator.geolocation){ if(st) st.textContent='Kein GPS'; return; } navigator.geolocation.getCurrentPosition(function(pos){ var lat=pos.coords.latitude, lon=pos.coords.longitude; var best=null, bd=Infinity; for(var i=0;i<stops.length;i++){ var s=stops[i]; var d=Math.sqrt((s.lat-lat)*(s.lat-lat)+(s.lon-lon)*(s.lon-lon)); if(d<bd){bd=d; best=s;}} if(best){ selected.from=best; document.getElementById('from').value=best.name; if(st) st.textContent='✅ '+best.name; updateBottom('Von: '+best.name); if(map) map.flyTo({center:[best.lon,best.lat], zoom:14}); } }, function(e){ if(st) st.textContent='❌ '+e.message; }, {enableHighAccuracy:true, timeout:10000}); });
 var locTo=document.getElementById('locTo'); if(locTo) locTo.addEventListener('click', function(){ var st=document.getElementById('locToStatus'); if(st) st.textContent='📍 Standort...'; if(!navigator.geolocation){ if(st) st.textContent='Kein GPS'; return; } navigator.geolocation.getCurrentPosition(function(pos){ var lat=pos.coords.latitude, lon=pos.coords.longitude; var best=null, bd=Infinity; for(var i=0;i<stops.length;i++){ var s=stops[i]; var d=Math.sqrt((s.lat-lat)*(s.lat-lat)+(s.lon-lon)*(s.lon-lon)); if(d<bd){bd=d; best=s;}} if(best){ selected.to=best; document.getElementById('to').value=best.name; if(st) st.textContent='✅ '+best.name; updateBottom('Nach: '+best.name); if(map) map.flyTo({center:[best.lon,best.lat], zoom:14}); } }, function(e){ if(st) st.textContent='❌ '+e.message; }, {enableHighAccuracy:true, timeout:10000}); });
 
-console.log('✅ RufZu CLEAN – ohne verbose Texte – mit KM + Fahrzeit');
+console.log('✅ RufZu mit OCR – Fahrplan Auto-Fill Von/Nach – Tesseract.js');
 </script>
 </body>
 </html>
