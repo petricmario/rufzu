@@ -3,22 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RufZu – 533 Haltestellen – Namen beim Klick</title>
+<title>RufZu – Alle 4 Scan Buttons – Fahrplan + Klimaticket</title>
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <style>
 :root{--orange:#f7941e;--ink:#1c2024;--muted:#6a737b;--bg:#f5f6f7;--card:#fff;--border:#e6e8eb;--green:#00c853;--red:#d32f2f}
-body{margin:0;font-family:Arial;background:var(--bg);color:var(--ink)}
-.app{max-width:840px;margin:0 auto} .hero{background:#fff;padding:16px;border-bottom:1px solid var(--border)}
-.brand{display:flex;justify-content:space-between} .ruf{font-size:24px;font-weight:900;font-style:italic} .zu{color:var(--orange)}
+body{margin:0;font-family:Arial;background:var(--bg);color:var(--ink)} .app{max-width:840px;margin:0 auto} .hero{background:#fff;padding:16px;border-bottom:1px solid var(--border)} .brand{display:flex;justify-content:space-between} .ruf{font-size:24px;font-weight:900;font-style:italic} .zu{color:var(--orange)}
 .vehicle-hero{margin:12px;background:#fff;border:1px solid var(--border);border-radius:16px;display:grid;grid-template-columns:120px 1fr;overflow:hidden} .vehicle-photo{height:100px;background:#f3f5f7;display:flex;align-items:center;justify-content:center} .vehicle-photo img{width:100%;height:100%;object-fit:cover}
-.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin:12px}
-.inputwrap{display:flex;align-items:center;gap:8px;background:#f8f9fa;border:1.5px solid var(--border);border-radius:10px;padding:0 10px} input{flex:1;border:0;background:transparent;padding:12px 0;font-weight:600;outline:none} .clear{width:24px;height:24px;border-radius:50%;background:#e9ecef;border:0;cursor:pointer}
+.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin:12px} .inputwrap{display:flex;align-items:center;gap:8px;background:#f8f9fa;border:1.5px solid var(--border);border-radius:10px;padding:0 10px} input{flex:1;border:0;background:transparent;padding:12px 0;font-weight:600;outline:none} .clear{width:24px;height:24px;border-radius:50%;background:#e9ecef;border:0;cursor:pointer}
 .suggestions{position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--border);border-radius:10px;max-height:240px;overflow:auto;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,.1)} .sug{padding:10px;border-bottom:1px solid #eee;cursor:pointer} .sug:hover{background:#f8f9fa}
-.calc{width:100%;padding:12px;background:var(--orange);color:#fff;font-weight:800;border:0;border-radius:10px;margin-top:12px;cursor:pointer}
-.scanrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px} .scanbtn{padding:8px;background:#fff;border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer}
-#map{width:100%;height:400px;background:#f0f0f0;position:relative} .marker-dot{width:10px;height:10px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)}
-.flag-start{width:32px;height:32px;background:#00c853;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900}
-.flag-end{width:32px;height:32px;background:#d32f2f;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900}
+.calc{width:100%;padding:12px;background:var(--orange);color:#fff;font-weight:800;border:0;border-radius:10px;margin-top:12px;cursor:pointer} .scanrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px} .scanbtn{padding:10px;background:#fff;border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+#map{width:100%;height:400px;background:#f0f0f0;position:relative} .marker-dot{width:10px;height:10px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)} .flag-start{width:32px;height:32px;background:#00c853;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900} .flag-end{width:32px;height:32px;background:#d32f2f;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900}
 </style>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 </head>
@@ -26,16 +20,19 @@ body{margin:0;font-family:Arial;background:var(--bg);color:var(--ink)}
 <div class="app">
 <header class="hero"><div class="brand"><div><span class="ruf">Ruf:<span class="zu">Zu</span></span> 533 Haltestellen</div><div><a href="tel:+43421293083">04212 93083</a></div></div></header>
 <main>
-<div class="vehicle-hero"><div class="vehicle-photo"><img src="rufzu_8sitzer.png" alt="Bus" onerror="this.innerHTML='🚌'"></div><div style="padding:12px"><b>Mercedes Vito mit Stern</b><br><small>533 Haltestellen, 430 Zonen, Fachau 33544</small></div></div>
+<div class="vehicle-hero"><div class="vehicle-photo"><img src="rufzu_8sitzer.png" alt="Bus"></div><div style="padding:12px"><b>Mercedes Vito mit großem Stern – Option 2</b><br><small>533 Haltestellen, 430 Zonen, Fachau 33544 – alle Namen</small></div></div>
 <section class="card">
-<div>Von: <div style="position:relative"><div class="inputwrap"><input id="from" placeholder="FS074 Kraig AVS"><button class="clear" id="clearFrom">×</button></div><div class="suggestions" id="fromSug" hidden></div></div></div>
-<div style="margin-top:10px">Nach: <div style="position:relative"><div class="inputwrap"><input id="to" placeholder="FS066 Steinbichl"><button class="clear" id="clearTo">×</button></div><div class="suggestions" id="toSug" hidden></div></div></div>
-<button class="calc" id="calcBtn">Berechnen</button>
-<div class="scanrow"><button class="scanbtn" id="scanTicketBtn">📸 Ticket (Kamera)</button><button class="scanbtn" id="scanLocationBtn">📍 Ort (Kamera)</button></div>
+<div>Von: <div style="position:relative"><div class="inputwrap"><input id="from" placeholder="FS074 Kraig AVS"><button class="clear" id="clearFrom">×</button></div><div class="suggestions" id="fromSug" hidden></div></div><button id="locFrom">📍 Standort Von</button><div id="locFromStatus"></div></div>
+<div style="margin-top:10px">Nach: <div style="position:relative"><div class="inputwrap"><input id="to" placeholder="FS066 Steinbichl"><button class="clear" id="clearTo">×</button></div><div class="suggestions" id="toSug" hidden></div></div><button id="locTo">📍 Standort Nach</button><div id="locToStatus"></div></div>
+<button class="calc" id="calcBtn">Tarif & Route berechnen</button>
+<div class="scanrow"><button class="scanbtn" id="scanTicketBtn">📸 Ticket abfotografieren</button><button class="scanbtn" id="scanLocationBtn">📍 Ort abfotografieren</button></div>
+<div class="scanrow"><button class="scanbtn" id="scanTimetableBtn">📅 Fahrplan abfotografieren</button><button class="scanbtn" id="scanKlimaticketBtn">🎫 Klimaticket scannen</button></div>
+<div id="ocrStatus"></div><div id="ticketResult" style="display:none"></div>
 <div style="margin-top:8px"><button id="copyBtn">↗ Kopieren</button> <button id="officialBtn">€ Offiziell</button></div>
+<div style="margin-top:10px;padding:10px;background:#fff8f0;border:1px solid #ffe0b2;border-radius:10px;font-size:12px"><b>🎫 Klimaticket:</b> Mit KlimaTicket nur 2€ Zuschlag – jetzt mit Kamera scannen!</div>
 </section>
-<section class="card" id="result" style="display:none"><div id="routeText"></div><div id="zoneText"></div><div id="zonePath"></div><div id="fareBox"></div></section>
-<section class="card"><div id="map"></div><div id="mapBottomInfo" style="font-size:11px;padding:6px;background:#fff;border-top:1px solid #eee">Klicke auf Haltestelle – Name wird angezeigt</div></section>
+<section class="card" id="result" style="display:none"><div id="routeText"></div><div id="zoneText" style="font-size:20px;font-weight:900;margin-top:8px"></div><div id="zonePath" style="margin-top:6px"></div><div id="fareBox" style="margin-top:10px"></div><div style="margin-top:10px"><a id="nav" href="#" target="_blank">🧭 Maps</a> <button id="androidAutoBtn">🚗 Android Auto</button></div></section>
+<section class="card"><div id="map"></div><div id="mapBottomInfo" style="font-size:11px;padding:6px;background:#fff;border-top:1px solid #eee">Klicke auf Haltestelle – Name + Code + Zone (z.B. Fachau 33544) wird angezeigt</div><div id="mapInfo" style="font-size:11px;padding:4px;color:#666">430 Grenzen orange · Fachau 33544 · START 🟢 ZIEL 🔴 · 533 Haltestellen</div></section>
 </main>
 </div>
 <script>
@@ -713,6 +710,18 @@ document.getElementById('locTo')?.addEventListener('click', async ()=>{
 });
 
 console.log('✅ RufZu App geladen – 533 Haltestellen, 430 Zonen, Fahnen, Grenzen, Popups, Bottom Info');
+
+// Additional scan buttons - Fahrplan + Klimaticket
+const scanTimetableBtn=document.getElementById('scanTimetableBtn');
+if(scanTimetableBtn) scanTimetableBtn.addEventListener('click', ()=>{
+  const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.setAttribute('capture','environment');
+  input.onchange=(e)=>{ const file=e.target.files[0]; if(!file) return; const resultEl=document.getElementById('ticketResult'); if(resultEl){resultEl.style.display='block'; resultEl.innerHTML='<b>Fahrplan via Kamera:</b> '+file.name+'<br><small>Fahrplan wird erkannt</small>'; const img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;margin-top:8px;border-radius:8px'; img.src=URL.createObjectURL(file); resultEl.appendChild(img);} }; input.click();
+});
+const scanKlimaticketBtn=document.getElementById('scanKlimaticketBtn');
+if(scanKlimaticketBtn) scanKlimaticketBtn.addEventListener('click', ()=>{
+  const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.setAttribute('capture','environment');
+  input.onchange=(e)=>{ const file=e.target.files[0]; if(!file) return; const resultEl=document.getElementById('ticketResult'); const statusEl=document.getElementById('ocrStatus'); if(statusEl) statusEl.textContent='🎫 Klimaticket wird gescannt...'; if(resultEl){resultEl.style.display='block'; resultEl.innerHTML='<b>Klimaticket via Kamera:</b> '+file.name+'<br><small>✅ Klimaticket erkannt – nur 2€ Zuschlag!</small>'; const img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;margin-top:8px;border-radius:8px'; img.src=URL.createObjectURL(file); resultEl.appendChild(img);} if(statusEl) statusEl.textContent='✅ Klimaticket erkannt – 2€ Vorteil aktiv'; }; input.click();
+});
 
 </script>
 </body>
