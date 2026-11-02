@@ -3,64 +3,90 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RufZu FINAL 3-Dateien - 533 + 430 Zonen - VersaTiles colorful - Fahnen normal</title>
+<title>RufZu VOLL DESIGN FINAL - 533 + 430 Zonen + Grenzen + Fahnen</title>
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <style>
-:root{--orange:#f7941e} body{margin:0;font-family:Arial;background:#15181c;color:#fff}
+:root{--orange:#f7941e;--ink:#1c2024;--muted:#6a737b}
+*{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#15181c;color:#fff}
 .app{max-width:780px;margin:auto;background:#15181c;min-height:100vh}
-.hero{background:#fff;color:#222;padding:18px 18px 50px;border-bottom:4px solid var(--orange)}
+.hero{background:#fff;color:#1c2024;padding:18px 18px 50px;border-bottom:4px solid var(--orange)} 
+.hero h1{font-size:22px;margin:14px 0 6px} .hero p{color:#6a737b;font-size:13px;margin:0}
 .card{background:#fff;color:#222;border-radius:20px;padding:16px;margin:-28px 12px 12px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
 .label{font-size:11px;font-weight:800;color:#6a737b;text-transform:uppercase;margin:8px 0 4px}
 input{width:100%;padding:12px;border-radius:12px;border:1px solid #dfe4e8;font-weight:700}
-.calc{width:100%;padding:14px;background:var(--orange);color:#fff;font-weight:900;border-radius:12px;margin-top:12px;border:0;text-transform:uppercase}
+button{border:0;cursor:pointer} .calc{width:100%;padding:14px;background:var(--orange);color:#fff;font-weight:900;border-radius:12px;margin-top:12px;text-transform:uppercase}
 .result{background:#fff;color:#222;border-radius:20px;margin:12px;overflow:hidden;display:none} .result.show{display:block}
 .zonehero{background:linear-gradient(135deg,#f7941e,#e87c0a);padding:16px;color:#fff} .zonebig{font-size:32px;font-weight:900}
-#map{width:100%;height:440px;background:#f8f4f0}
+#map{width:100%;height:420px;background:#f8f4f0}
 .marker-dot{width:11px;height:11px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 .flag-start{width:36px;height:36px;background:#00c853;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;box-shadow:0 3px 12px rgba(0,0,0,.4);font-size:18px}
 .flag-end{width:36px;height:36px;background:#d32f2f;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;box-shadow:0 3px 12px rgba(0,0,0,.4);font-size:18px}
 .flag-label{background:rgba(0,0,0,.75);color:#fff;font-size:10px;font-weight:900;padding:2px 6px;border-radius:6px;white-space:nowrap;margin-top:2px;text-align:center}
-.suggestions{background:#fff;border:1px solid #ddd;border-radius:12px;max-height:240px;overflow:auto;margin-top:4px} .sug{padding:10px 12px;border-bottom:1px solid #eee;cursor:pointer} .sug b{font-size:13px} .sug small{font-size:11px;color:#666}
+.suggestions{background:#fff;border:1px solid #ddd;border-radius:12px;max-height:240px;overflow:auto;margin-top:4px} .sug{padding:10px 12px;border-bottom:1px solid #eee;cursor:pointer} .sug:last-child{border:0} .sug b{font-size:13px} .sug span{font-size:11px;color:#666;display:block}
 .footer{padding:16px;text-align:center;color:#8a939c;font-size:11px}
+</style>
+<style>
+.marker-dot{width:11px;height:11px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.flag-start{width:36px;height:36px;background:#00c853;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;box-shadow:0 3px 12px rgba(0,0,0,.4);font-size:18px}
+.flag-end{width:36px;height:36px;background:#d32f2f;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;box-shadow:0 3px 12px rgba(0,0,0,.4);font-size:18px}
+.flag-label{background:rgba(0,0,0,.75);color:#fff;font-size:10px;font-weight:900;padding:2px 6px;border-radius:6px;white-space:nowrap;margin-top:2px;text-align:center}
+.suggestions{background:#fff;border:1px solid #ddd;border-radius:12px;max-height:240px;overflow:auto;margin-top:4px;position:absolute;left:0;right:0;z-index:99} .sug{padding:10px 12px;border-bottom:1px solid #eee;cursor:pointer} .sug b{font-size:13px} .sug small{font-size:11px;color:#666}
+.field{position:relative}
 </style>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="rufzu-daten-final.js"></script>
 </head>
 <body>
-<div style="background:#00c853;color:white;padding:8px;text-align:center;font-weight:900;font-size:13px">✅ FINAL 3-Dateien – flüssiger: index + daten (533+430) + app – VersaTiles colorful – Fahnen normal</div>
+<div style="background:#00c853;color:white;padding:8px;text-align:center;font-weight:900;font-size:13px">✅ VOLL DESIGN FINAL - 533 Haltestellen + 430 Zonen + alle Grenzen orange + VersaTiles colorful + START/ZIEL Fahne normal</div>
 <div class="app">
-<div class="hero">
-<div style="display:flex;justify-content:space-between"><div style="font-size:26px;font-weight:900;font-style:italic">Ruf:<span style="color:#f7941e">Zu</span> <span style="font-size:11px">533 • 430 Zonen • 3 Dateien</span></div><div style="font-size:12px;font-weight:800"><a href="tel:+43421293083" style="color:inherit;text-decoration:none">04212 / 93083</a></div></div>
-<h1 style="font-size:20px;margin:12px 0 6px">Flüssiger mit 3 Dateien</h1>
-<p style="color:#6a737b;font-size:12px;margin:0">index.html klein, daten.js cached, app.js cached – läuft flüssiger</p>
-</div>
+<header class="hero">
+  <div class="brand">
+    <div class="brandtext">
+      <div class="brandmark"><img src="rufzu_R_logo_transparent.png" alt="RufZu Logo" style="width:76px;height:52px;object-fit:contain" onerror="this.style.display='none'"></div>
+      <div><div class="ruf">Ruf:<span class="zu">Zu</span></div><div class="tag">Rufbus Zollfeld & Umgebung – 533 Haltestellen – VOLL DESIGN mit Grenzen</div></div>
+    </div>
+    <div class="phone"><span class="lbl">Anrufen</span><a href="tel:+43421293083">04212 / 93083</a></div>
+  </div>
+  <h1>Gut zu wissen: Ruf:Zu bringt dich zuverlässig zu deinen Anschlussverbindungen.</h1>
+  <p>Jetzt mit vollständigem Design, 533 Original Haltestellen, allen 430 Tarifzonen-Grenzen orange sichtbar, VersaTiles colorful Karte und START/ZIEL Fahnen.</p>
+</header>
+<main class="content">
+  <section class="card">
+    <div class="section-title">Fahrt berechnen – 533 Haltestellen</div>
+    <div class="field" style="margin-top:14px">
+      <div class="label">Von · Startpunkt</div>
+      <div class="inputwrap"><div class="pin">●</div><input id="from" autocomplete="off" placeholder="Start-Haltestelle suchen …"><button class="clear" id="clearFrom">×</button></div>
+      <div class="suggestions" id="fromSug" hidden></div>
+    </div>
+    <div class="field">
+      <div class="label">Nach · Haltestelle</div>
+      <div class="inputwrap"><div class="pin to">◎</div><input id="to" autocomplete="off" placeholder="Haltestelle suchen …"><button class="clear" id="clearTo">×</button></div>
+      <div class="suggestions" id="toSug" hidden></div>
+    </div>
+    <button class="calc" id="calcBtn">Tarif & Route berechnen</button>
+    <div class="subactions"><button class="secondary" id="copyBtn">↗ Von / Nach kopieren</button><button class="secondary" onclick="window.open('https://pa2.kaerntner-linien.at/preisauskunft','_blank')">€ Offizielle Preisauskunft</button></div>
+  </section>
 
-<div class="card">
-<div class="label">Von · Start</div>
-<input id="from" autocomplete="off" placeholder="z.B. FS074 Kraig AVS">
-<div id="fromSug" class="suggestions"></div>
-<div class="label">Nach · Ziel</div>
-<input id="to" autocomplete="off" placeholder="z.B. FS066 Steinbichl" style="margin-top:8px">
-<div id="toSug" class="suggestions"></div>
-<button class="calc" id="calcBtn">Tarif & Route berechnen</button>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-<button style="padding:10px;border:1px solid #ddd;background:#fff;border-radius:10px;font-weight:700;font-size:12px" id="copyBtn">Kopieren</button>
-<button style="padding:10px;border:1px solid #ddd;background:#fff;border-radius:10px;font-weight:700;font-size:12px" onclick="window.open('https://pa2.kaerntner-linien.at/preisauskunft','_blank')">Offizielle Preise</button>
-</div>
-</div>
+  <section class="result" id="result">
+    <div class="resultcard">
+      <div class="resulthead"><div class="eyebrow">Tarifberechnung</div><div class="route" id="routeText"></div></div>
+      <div class="zonehero"><div class="zonebig" id="zoneText">—</div><div class="zonepath" id="zonePath">Noch keine Fahrt berechnet.</div></div>
+      <div class="distance"><div><strong id="distanceText">—</strong><small id="distanceNote">Noch keine Route – Grenzen sind orange sichtbar</small></div></div>
+      <div class="info" id="zoneMessage"></div>
+      <div class="farebox" id="fareBox"></div>
+      <div class="resultactions"><a class="primarylink" id="nav" href="#" target="_blank">🧭 In Maps navigieren</a><button class="orangeLink" id="androidAutoBtn" type="button">🚗 Android Auto</button></div>
+    </div>
+  </section>
 
-<div class="result" id="result">
-<div style="padding:12px;background:#1c2024;color:#fff"><div style="font-size:11px;color:#f7941e;font-weight:900">TARIF</div><div id="routeText" style="margin-top:6px;font-size:13px"></div></div>
-<div class="zonehero"><div class="zonebig" id="zoneText">—</div><div id="zonePath" style="margin-top:6px;font-size:13px;font-weight:700"></div></div>
-<div style="padding:12px;font-size:12px" id="fareBox"></div>
-</div>
+  <section class="mapcard"><div class="maphead">Karte – VersaTiles colorful – alle 430 Grenzen orange <span id="mapInfo">533 Haltestellen · START 🟢 ZIEL 🔴</span></div><div class="map" id="map"></div></section>
 
-<div style="margin:12px;background:#fff;border-radius:20px;overflow:hidden">
-<div style="padding:12px 14px;font-weight:900;display:flex;justify-content:space-between"><span>Karte – VersaTiles colorful – alle 430 Grenzen</span><span style="font-size:11px;color:#666">START 🟢 ZIEL 🔴</span></div>
-<div id="map"></div>
-</div>
+  <div class="vehicle-hero">
+    <div class="vehicle-photo"><img src="rufzu_8sitzer.png" alt="RufZu Bus" style="display:block;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'; this.parentElement.textContent='🚌'"></div>
+    <div class="vehicle-copy"><b>Ruf:Zu 8-Sitzer</b><span>Komfortabel, barrierefrei, mit Klimaanlage – dein Rufbus für Zollfeld & Umgebung</span></div>
+  </div>
 
-<div class="footer">3-Dateien Version – flüssiger – index.html + rufzu-daten-final.js (533+430) + rufzu-app-final.js – START grün 🚩 ZIEL rot 🏁</div>
+  <footer class="footer"><b>Ruf:Zu</b> – 533 Haltestellen original, 430 Zonen, alle Grenzen orange, VersaTiles colorful, START grüne Fahne 🚩 ZIEL rote Fahne 🏁<br><a class="official" href="https://pa2.kaerntner-linien.at/preisauskunft" target="_blank">Offizielle Preisauskunft Kärntner Linien</a></footer>
+</main>
 </div>
 
 <script src="rufzu-app-final.js"></script>
