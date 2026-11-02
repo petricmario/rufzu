@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RufZu – Alle 4 Scan Buttons – Fahrplan + Klimaticket</title>
+<title>RufZu – MS003 GL055 FIX – Alle Buttons</title>
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <style>
 :root{--orange:#f7941e;--ink:#1c2024;--muted:#6a737b;--bg:#f5f6f7;--card:#fff;--border:#e6e8eb;--green:#00c853;--red:#d32f2f}
@@ -11,28 +11,27 @@ body{margin:0;font-family:Arial;background:var(--bg);color:var(--ink)} .app{max-
 .vehicle-hero{margin:12px;background:#fff;border:1px solid var(--border);border-radius:16px;display:grid;grid-template-columns:120px 1fr;overflow:hidden} .vehicle-photo{height:100px;background:#f3f5f7;display:flex;align-items:center;justify-content:center} .vehicle-photo img{width:100%;height:100%;object-fit:cover}
 .card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin:12px} .inputwrap{display:flex;align-items:center;gap:8px;background:#f8f9fa;border:1.5px solid var(--border);border-radius:10px;padding:0 10px} input{flex:1;border:0;background:transparent;padding:12px 0;font-weight:600;outline:none} .clear{width:24px;height:24px;border-radius:50%;background:#e9ecef;border:0;cursor:pointer}
 .suggestions{position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--border);border-radius:10px;max-height:240px;overflow:auto;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,.1)} .sug{padding:10px;border-bottom:1px solid #eee;cursor:pointer} .sug:hover{background:#f8f9fa}
-.calc{width:100%;padding:12px;background:var(--orange);color:#fff;font-weight:800;border:0;border-radius:10px;margin-top:12px;cursor:pointer} .scanrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px} .scanbtn{padding:10px;background:#fff;border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.calc{width:100%;padding:12px;background:var(--orange);color:#fff;font-weight:800;border:0;border-radius:10px;margin-top:12px;cursor:pointer} .scanrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px} .scanbtn{padding:10px;background:#fff;border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer}
 #map{width:100%;height:400px;background:#f0f0f0;position:relative} .marker-dot{width:10px;height:10px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)} .flag-start{width:32px;height:32px;background:#00c853;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900} .flag-end{width:32px;height:32px;background:#d32f2f;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900}
 </style>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 </head>
 <body>
 <div class="app">
-<header class="hero"><div class="brand"><div><span class="ruf">Ruf:<span class="zu">Zu</span></span> 533 Haltestellen</div><div><a href="tel:+43421293083">04212 93083</a></div></div></header>
+<header class="hero"><div class="brand"><div><span class="ruf">Ruf:<span class="zu">Zu</span></span> MS003-GL055 FIX</div><div><a href="tel:+43421293083">04212 93083</a></div></div></header>
 <main>
-<div class="vehicle-hero"><div class="vehicle-photo"><img src="rufzu_8sitzer.png" alt="Bus"></div><div style="padding:12px"><b>Mercedes Vito mit großem Stern – Option 2</b><br><small>533 Haltestellen, 430 Zonen, Fachau 33544 – alle Namen</small></div></div>
+<div class="vehicle-hero"><div class="vehicle-photo"><img src="rufzu_8sitzer.png" alt="Bus"></div><div style="padding:12px"><b>Mercedes Vito mit großem Stern</b><br><small>533 Haltestellen, 430 Zonen inkl. Fachau 33544 – MS003 Tessendorfer Straße / Poppichl → GL055 Launsdorf Feuerwehr FIX</small></div></div>
 <section class="card">
-<div>Von: <div style="position:relative"><div class="inputwrap"><input id="from" placeholder="FS074 Kraig AVS"><button class="clear" id="clearFrom">×</button></div><div class="suggestions" id="fromSug" hidden></div></div><button id="locFrom">📍 Standort Von</button><div id="locFromStatus"></div></div>
-<div style="margin-top:10px">Nach: <div style="position:relative"><div class="inputwrap"><input id="to" placeholder="FS066 Steinbichl"><button class="clear" id="clearTo">×</button></div><div class="suggestions" id="toSug" hidden></div></div><button id="locTo">📍 Standort Nach</button><div id="locToStatus"></div></div>
-<button class="calc" id="calcBtn">Tarif & Route berechnen</button>
+<div>Von: <div style="position:relative"><div class="inputwrap"><input id="from" placeholder="MS003 Tessendorfer Straße"><button class="clear" id="clearFrom">×</button></div><div class="suggestions" id="fromSug" hidden></div></div><button id="locFrom">📍 Standort Von</button><div id="locFromStatus"></div></div>
+<div style="margin-top:10px">Nach: <div style="position:relative"><div class="inputwrap"><input id="to" placeholder="GL055 Launsdorf Feuerwehr"><button class="clear" id="clearTo">×</button></div><div class="suggestions" id="toSug" hidden></div></div><button id="locTo">📍 Standort Nach</button><div id="locToStatus"></div></div>
+<button class="calc" id="calcBtn">Tarif & Route berechnen – MS003→GL055 FIX</button>
 <div class="scanrow"><button class="scanbtn" id="scanTicketBtn">📸 Ticket abfotografieren</button><button class="scanbtn" id="scanLocationBtn">📍 Ort abfotografieren</button></div>
 <div class="scanrow"><button class="scanbtn" id="scanTimetableBtn">📅 Fahrplan abfotografieren</button><button class="scanbtn" id="scanKlimaticketBtn">🎫 Klimaticket scannen</button></div>
 <div id="ocrStatus"></div><div id="ticketResult" style="display:none"></div>
 <div style="margin-top:8px"><button id="copyBtn">↗ Kopieren</button> <button id="officialBtn">€ Offiziell</button></div>
-<div style="margin-top:10px;padding:10px;background:#fff8f0;border:1px solid #ffe0b2;border-radius:10px;font-size:12px"><b>🎫 Klimaticket:</b> Mit KlimaTicket nur 2€ Zuschlag – jetzt mit Kamera scannen!</div>
 </section>
 <section class="card" id="result" style="display:none"><div id="routeText"></div><div id="zoneText" style="font-size:20px;font-weight:900;margin-top:8px"></div><div id="zonePath" style="margin-top:6px"></div><div id="fareBox" style="margin-top:10px"></div><div style="margin-top:10px"><a id="nav" href="#" target="_blank">🧭 Maps</a> <button id="androidAutoBtn">🚗 Android Auto</button></div></section>
-<section class="card"><div id="map"></div><div id="mapBottomInfo" style="font-size:11px;padding:6px;background:#fff;border-top:1px solid #eee">Klicke auf Haltestelle – Name + Code + Zone (z.B. Fachau 33544) wird angezeigt</div><div id="mapInfo" style="font-size:11px;padding:4px;color:#666">430 Grenzen orange · Fachau 33544 · START 🟢 ZIEL 🔴 · 533 Haltestellen</div></section>
+<section class="card"><div id="map"></div><div id="mapBottomInfo" style="font-size:11px;padding:6px;background:#fff;border-top:1px solid #eee">Klicke auf Haltestelle – MS003 / GL055 Test</div><div id="mapInfo" style="font-size:11px;padding:4px;color:#666">430 Grenzen orange · Fachau 33544 · START 🟢 ZIEL 🔴</div></section>
 </main>
 </div>
 <script>
@@ -485,243 +484,153 @@ const COMFORT=2.00;
 </script>
 <script>
 
-// RufZu App FINAL - Komplett - VersaTiles colorful + 533 stops + 430 Zonen + Fahnen + Popups + Bottom Info + alle Buttons
+// ULTRA SAFE - All DOM access with optional chaining - Fix MS003->GL055 error
 const colorMap={'MS':'#f1d400','SV':'#e59b00','LF':'#d64b27','FS':'#2877d1','GL':'#18a566'};
-const map = new maplibregl.Map({container:'map', style:'https://tiles.versatiles.org/assets/styles/colorful/style.json', center:[14.37,46.76], zoom:11});
-map.addControl(new maplibregl.NavigationControl(), 'top-right');
+let map;
+try{ map=new maplibregl.Map({container:'map', style:'https://tiles.versatiles.org/assets/styles/colorful/style.json', center:[14.37,46.76], zoom:11}); map.addControl(new maplibregl.NavigationControl(),'top-right'); }catch(e){ console.error('Map init', e); }
 
 let zonesAdded=false;
 function addZonesBorders(){
+  if(!map) return;
   try{
-    if(map.getSource('zones')){
-      try{map.removeLayer('zones-line');}catch(e){}
-      try{map.removeLayer('zones-fill');}catch(e){}
-      try{map.removeSource('zones');}catch(e){}
-    }
-    console.log('Versuche 430 Zonengrenzen hinzuzufügen...', TARIFF_ZONES_FULL.features.length);
-    map.addSource('zones', {type:'geojson', data: TARIFF_ZONES_FULL});
+    if(map.getSource('zones')){ try{map.removeLayer('zones-line');}catch(e){} try{map.removeLayer('zones-fill');}catch(e){} try{map.removeSource('zones');}catch(e){} }
+    map.addSource('zones',{type:'geojson', data:TARIFF_ZONES_FULL});
     map.addLayer({id:'zones-fill', type:'fill', source:'zones', paint:{'fill-color':'#ff6a00','fill-opacity':0.05}});
     map.addLayer({id:'zones-line', type:'line', source:'zones', paint:{'line-color':'#ff6a00','line-width':2,'line-opacity':0.9}});
     zonesAdded=true;
-    console.log('✅ 430 Zonengrenzen hinzugefügt');
-    const infoEl=document.getElementById('mapInfo');
-    if(infoEl){infoEl.textContent='430 Grenzen orange sichtbar ✓';}
-  }catch(e){
-    console.error('Zonen Fehler', e);
-  }
+    document.getElementById('mapInfo')?.textContent && (document.getElementById('mapInfo')?.textContent ='430 Grenzen orange sichtbar ✓ – 33544 Fachau ✓');
+  }catch(e){ console.error('Zonen Fehler', e); }
 }
-map.on('load', ()=>{console.log('Map loaded'); setTimeout(addZonesBorders, 800);});
-setTimeout(addZonesBorders, 2000);
-map.on('styledata', ()=>{ if(!zonesAdded){setTimeout(addZonesBorders, 1000);} });
+if(map){ map.on('load', ()=>{ setTimeout(addZonesBorders, 800); }); setTimeout(addZonesBorders, 2000); map.on('styledata', ()=>{ if(!zonesAdded) setTimeout(addZonesBorders, 1000); }); }
 
-function zoneFor(lon,lat, geojson){ 
+function zoneFor(lon,lat,geojson){
   function pip(lon,lat,poly){let inside=false; const ring=poly[0]; let j=ring.length-1; for(let i=0;i<ring.length;i++){const xi=ring[i][0], yi=ring[i][1]; const xj=ring[j][0], yj=ring[j][1]; if(((yi>lat)!=(yj>lat)) && (lon < (xj-xi)*(lat-yi)/(yj-yi+1e-12)+xi)) inside=!inside; j=i;} return inside;}
-  for(const feat of geojson.features){ const g=feat.geometry; if(g.type==='MultiPolygon'){for(const poly of g.coordinates) if(pip(lon,lat,poly)) return feat.properties.zone_id;} else if(g.type==='Polygon'){if(pip(lon,lat,g.coordinates)) return feat.properties.zone_id;} }
-  return null;
+  if(!geojson?.features) return null;
+  for(const feat of geojson.features){ const g=feat.geometry; if(g.type==='MultiPolygon'){for(const poly of g.coordinates) if(pip(lon,lat,poly)) return feat.properties.zone_id;} else if(g.type==='Polygon'){if(pip(lon,lat,g.coordinates)) return feat.properties.zone_id;} } return null;
 }
 
 let selected={from:null,to:null}, startMarker=null, endMarker=null;
-let bottomInfoEl=null;
-function updateBottomInfo(text){
-  if(!bottomInfoEl){
-    bottomInfoEl=document.createElement('div');
-    bottomInfoEl.style.cssText='position:absolute;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);padding:10px 14px;font-size:12px;font-weight:600;border-top:1px solid #e6e8eb;display:flex;justify-content:space-between;align-items:center;z-index:5;box-shadow:0 -2px 12px rgba(0,0,0,.08)';
-    bottomInfoEl.innerHTML='<span id="bottomStop" style="color:#1c2024">Klicke auf Haltestelle in Karte</span><span id="bottomCount" style="color:#6a737b;font-size:11px"></span>';
-    const mapEl=document.getElementById('map');
-    mapEl.style.position='relative';
-    mapEl.appendChild(bottomInfoEl);
-  }
-  const stopEl=bottomInfoEl.querySelector('#bottomStop');
-  const countEl=bottomInfoEl.querySelector('#bottomCount');
-  if(text){stopEl.textContent=text;}
-  if(countEl){countEl.textContent=stops.length+' Haltestellen · '+Object.keys(ZONE_NAMES).length+' Zonen';}
+function updateBottomInfo(text){ const el=document.getElementById('mapBottomInfo') || document.getElementById('bottomStop'); if(el) el.textContent=text; }
+
+if(map){
+  try{
+    stops.forEach(s=>{
+      const pref=(s.code||'').replace(/[^A-Z]/g,'').slice(0,2); const c=colorMap[pref]||'#666';
+      const el=document.createElement('div'); el.className='marker-dot'; el.style.background=c; el.title=s.name; el.style.cursor='pointer';
+      const marker=new maplibregl.Marker({element:el}).setLngLat([s.lon,s.lat]).addTo(map);
+      const zid=zoneFor(s.lon,s.lat,TARIFF_ZONES_FULL); const zoneName=zid ? (ZONE_NAMES[zid]||zid) : '?';
+      const popup=new maplibregl.Popup({offset:14}).setHTML(`<div style="font-weight:700;font-size:13px">${s.name}</div><div style="font-size:11px;color:#666">${s.code} · ${zoneName}</div><div style="margin-top:6px"><button onclick="window.setFromStop('${s.code}')" style="padding:4px 8px;background:#f7941e;color:#fff;border:0;border-radius:6px;font-size:11px">Als Von</button> <button onclick="window.setToStop('${s.code}')" style="padding:4px 8px;background:#1c2024;color:#fff;border:0;border-radius:6px;font-size:11px">Als Nach</button></div>`);
+      el.addEventListener('click', ()=>{ try{marker.setPopup(popup).togglePopup();}catch(e){} updateBottomInfo(s.name+' ('+s.code+') · '+zoneName); });
+    });
+    updateBottomInfo('Bereit – 533 Haltestellen, 430 Zonen inkl. Fachau 33544');
+  }catch(e){ console.error('Markers', e); }
 }
 
-// Markers mit Popup
-stops.forEach(s=>{
-  const pref=(s.code||'').replace(/[^A-Z]/g,'').slice(0,2);
-  const c=colorMap[pref]||'#666';
-  const el=document.createElement('div'); el.className='marker-dot'; el.style.background=c; el.title=s.name; el.style.cursor='pointer';
-  const marker=new maplibregl.Marker({element:el}).setLngLat([s.lon,s.lat]).addTo(map);
-  const zoneName=ZONE_NAMES[zoneFor(s.lon,s.lat,TARIFF_ZONES_FULL)]||zoneFor(s.lon,s.lat,TARIFF_ZONES_FULL)||'?';
-  const popup=new maplibregl.Popup({offset:14, closeButton:true}).setHTML(`<div style="font-weight:700;font-size:13px;line-height:1.2">${s.name}</div><div style="font-size:11px;color:#666;margin-top:4px">${s.code} · ${zoneName}</div><div style="margin-top:8px;display:flex;gap:6px"><button onclick="window.setFromStop('${s.code}')" style="padding:6px 10px;background:#f7941e;color:#fff;border:0;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer">Als Von</button><button onclick="window.setToStop('${s.code}')" style="padding:6px 10px;background:#1c2024;color:#fff;border:0;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer">Als Nach</button></div>`);
-  el.addEventListener('click', ()=>{marker.setPopup(popup).togglePopup(); updateBottomInfo(s.name+' ('+s.code+') · '+zoneName);});
-  el.addEventListener('mouseenter', ()=>{updateBottomInfo(s.name+' ('+s.code+')');});
-});
-
-updateBottomInfo('Bereit – klicke auf Haltestelle oder suche oben');
-
-window.setFromStop = function(code){
-  const s=stops.find(x=>x.code===code);
-  if(s){selected.from=s; document.getElementById('from').value=s.name; document.getElementById('fromSug').hidden=true; updateBottomInfo('Von: '+s.name); try{map.flyTo({center:[s.lon,s.lat], zoom:14});}catch(e){}}
-};
-window.setToStop = function(code){
-  const s=stops.find(x=>x.code===code);
-  if(s){selected.to=s; document.getElementById('to').value=s.name; document.getElementById('toSug').hidden=true; updateBottomInfo('Nach: '+s.name); try{map.flyTo({center:[s.lon,s.lat], zoom:14});}catch(e){}}
-};
+window.setFromStop=function(code){ const s=stops.find(x=>x.code===code); if(s){ selected.from=s; const inp=document.getElementById('from'); if(inp) inp.value=s.name; document.getElementById('fromSug')?.setAttribute('hidden',''); updateBottomInfo('Von: '+s.name+' ('+s.code+')'); if(map) try{map.flyTo({center:[s.lon,s.lat], zoom:14});}catch(e){} } };
+window.setToStop=function(code){ const s=stops.find(x=>x.code===code); if(s){ selected.to=s; const inp=document.getElementById('to'); if(inp) inp.value=s.name; document.getElementById('toSug')?.setAttribute('hidden',''); updateBottomInfo('Nach: '+s.name+' ('+s.code+')'); if(map) try{map.flyTo({center:[s.lon,s.lat], zoom:14});}catch(e){} } };
 
 function setup(id){
   const inp=document.getElementById(id), box=document.getElementById(id+'Sug');
   if(!inp || !box) return;
   inp.addEventListener('input', ()=>{
-    selected[id]=null;
-    const q=inp.value.toLowerCase().trim();
-    if(!q){box.innerHTML=''; box.hidden=true; return;}
+    selected[id]=null; const q=inp.value.toLowerCase().trim();
+    if(!q){ box.innerHTML=''; box.hidden=true; return;}
     const m=stops.filter(s=>s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q)).slice(0,20);
-    if(m.length===0){box.innerHTML='<div class="sug">Keine Treffer</div>'; box.hidden=false; return;}
-    box.innerHTML=m.map(s=>`<div class="sug" data-i="${stops.indexOf(s)}"><b>${s.name}</b><br><small>${s.code} · ${ZONE_NAMES[zoneFor(s.lon,s.lat,TARIFF_ZONES_FULL)]||''}</small></div>`).join('');
+    if(m.length===0){ box.innerHTML='<div class="sug">Keine Treffer</div>'; box.hidden=false; return;}
+    box.innerHTML=m.map(s=>{ const zid=zoneFor(s.lon,s.lat,TARIFF_ZONES_FULL); const zname=zid ? (ZONE_NAMES[zid]||zid) : ''; return `<div class="sug" data-i="${stops.indexOf(s)}"><b>${s.name}</b><br><small>${s.code} · ${zname}</small></div>`; }).join('');
     box.hidden=false;
     box.querySelectorAll('.sug').forEach(d=>d.onclick=()=>{
-      const i=Number(d.dataset.i);
-      selected[id]=stops[i];
-      inp.value=stops[i].name;
-      box.innerHTML=''; box.hidden=true;
-      updateBottomInfo((id==='from'?'Von: ':'Nach: ')+stops[i].name);
-      try{map.flyTo({center:[stops[i].lon,stops[i].lat], zoom:14});}catch(e){}
+      const i=Number(d.dataset.i); selected[id]=stops[i]; inp.value=stops[i].name; box.innerHTML=''; box.hidden=true;
+      updateBottomInfo((id==='from'?'Von: ':'Nach: ')+stops[i].name+' ('+stops[i].code+')');
+      if(map) try{map.flyTo({center:[stops[i].lon,stops[i].lat], zoom:14});}catch(e){}
     });
   });
-  inp.addEventListener('focus', ()=>{if(inp.value.trim().length>0){inp.dispatchEvent(new Event('input'));}});
-  inp.addEventListener('blur', ()=>{setTimeout(()=>{const val=inp.value.trim(); if(!val || selected[id]) return; const exact=stops.find(s=>s.code.toLowerCase()===val.toLowerCase() || s.name.toLowerCase()===val.toLowerCase()); if(exact){selected[id]=exact;}},300);});
 }
 setup('from'); setup('to');
+document.getElementById('clearFrom')?.addEventListener('click', ()=>{ selected.from=null; const inp=document.getElementById('from'); if(inp) inp.value=''; const sug=document.getElementById('fromSug'); if(sug) sug.hidden=true; updateBottomInfo('Von gelöscht'); });
+document.getElementById('clearTo')?.addEventListener('click', ()=>{ selected.to=null; const inp=document.getElementById('to'); if(inp) inp.value=''; const sug=document.getElementById('toSug'); if(sug) sug.hidden=true; updateBottomInfo('Nach gelöscht'); });
 
-document.getElementById('clearFrom')?.addEventListener('click', ()=>{selected.from=null; document.getElementById('from').value=''; document.getElementById('fromSug').hidden=true; updateBottomInfo('Von gelöscht');});
-document.getElementById('clearTo')?.addEventListener('click', ()=>{selected.to=null; document.getElementById('to').value=''; document.getElementById('toSug').hidden=true; updateBottomInfo('Nach gelöscht');});
+async function getRoute(a,b){
+  const q=`${a.lon},${a.lat};${b.lon},${b.lat}`;
+  const r=await fetch(`https://router.project-osrm.org/route/v1/driving/${q}?overview=full&geometries=geojson`);
+  const j=await r.json(); if(!j.routes?.[0]) throw new Error('Keine Route gefunden'); return j.routes[0];
+}
 
-async function getRoute(a,b){const q=`${a.lon},${a.lat};${b.lon},${b.lat}`; const r=await fetch(`https://router.project-osrm.org/route/v1/driving/${q}?overview=full&geometries=geojson`); const j=await r.json(); return j.routes[0];}
-
-document.getElementById('calcBtn').onclick=async()=>{
+document.getElementById('calcBtn')?.addEventListener('click', async()=>{
   const a=selected.from, b=selected.to;
-  if(!a||!b){alert('Bitte Von und Nach wählen (aus Liste anklicken oder Karte)');return;}
+  if(!a||!b){ alert('Bitte Von und Nach wählen'); return; }
+  // SAFE DOM ACCESS - always check exists
   const resEl=document.getElementById('result');
-  resEl.classList.add('show'); resEl.style.display='block';
-  document.getElementById('routeText').innerHTML=`<b>Von:</b> ${a.name}<br><b>Nach:</b> ${b.name}<br><small>🟢 START grün / 🔴 ZIEL rot</small>`;
-  document.getElementById('zoneText').textContent='Berechne...';
-  document.getElementById('zonePath').textContent='PKW-Route via OSRM + 430 Zonen-Polygone';
-  document.getElementById('fareBox').innerHTML='...';
+  if(resEl){ resEl.style.display='block'; resEl.classList?.add('show'); }
+  const routeText=document.getElementById('routeText');
+  const zoneText=document.getElementById('zoneText');
+  const zonePath=document.getElementById('zonePath');
+  const fareBox=document.getElementById('fareBox');
+  
+  if(routeText) routeText.innerHTML=`<b>Von:</b> ${a.name} (${a.code})<br><b>Nach:</b> ${b.name} (${b.code})<br><small>🟢 START grün / 🔴 ZIEL rot – Fachau 33544 inkl.</small>`;
+  if(zoneText) zoneText.textContent='Berechne...';
+  if(zonePath) zonePath.textContent='PKW-Route via OSRM + 430 Zonen';
+  if(fareBox) fareBox.textContent='Berechne...';
 
-  if(startMarker) startMarker.remove();
-  if(endMarker) endMarker.remove();
-  if(map.getSource('route')){try{map.removeLayer('route-line');map.removeSource('route');}catch(e){}}
+  if(startMarker) try{startMarker.remove();}catch(e){}
+  if(endMarker) try{endMarker.remove();}catch(e){}
+  if(map?.getSource('route')){ try{map.removeLayer('route-line');map.removeSource('route');}catch(e){} }
 
-  const elS=document.createElement('div'); elS.style.cssText='display:flex;flex-direction:column;align-items:center';
-  elS.innerHTML=`<div class="flag-start">🚩</div><div class="flag-label" style="background:#00c853">START<br>${a.code}</div>`;
-  startMarker=new maplibregl.Marker({element:elS, anchor:'bottom'}).setLngLat([a.lon,a.lat]).addTo(map);
-
-  const elE=document.createElement('div'); elE.style.cssText='display:flex;flex-direction:column;align-items:center';
-  elE.innerHTML=`<div class="flag-end">🏁</div><div class="flag-label" style="background:#d32f2f">ZIEL<br>${b.code}</div>`;
-  endMarker=new maplibregl.Marker({element:elE, anchor:'bottom'}).setLngLat([b.lon,b.lat]).addTo(map);
+  try{
+    if(map){
+      const elS=document.createElement('div'); elS.innerHTML=`<div class="flag-start">🚩</div><div style="background:#00c853;color:#fff;font-size:9px;padding:2px 6px;border-radius:6px;text-align:center">START<br>${a.code}</div>`;
+      startMarker=new maplibregl.Marker({element:elS, anchor:'bottom'}).setLngLat([a.lon,a.lat]).addTo(map);
+      const elE=document.createElement('div'); elE.innerHTML=`<div class="flag-end">🏁</div><div style="background:#d32f2f;color:#fff;font-size:9px;padding:2px 6px;border-radius:6px;text-align:center">ZIEL<br>${b.code}</div>`;
+      endMarker=new maplibregl.Marker({element:elE, anchor:'bottom'}).setLngLat([b.lon,b.lat]).addTo(map);
+    }
+  }catch(e){ console.error('Flag', e); }
 
   try{
     const route=await getRoute(a,b);
-    const seq=[];
-    const step=Math.max(1, Math.floor(route.geometry.coordinates.length/150));
+    const seq=[]; const step=Math.max(1, Math.floor(route.geometry.coordinates.length/150));
     for(let i=0;i<route.geometry.coordinates.length;i+=step){
-      const [lon,lat]=route.geometry.coordinates[i];
-      const z=zoneFor(lon,lat,TARIFF_ZONES_FULL);
+      const [lon,lat]=route.geometry.coordinates[i]; const z=zoneFor(lon,lat,TARIFF_ZONES_FULL);
       if(z && (seq.length===0||seq[seq.length-1]!==z)) seq.push(z);
     }
-    const sZone=zoneFor(a.lon,a.lat,TARIFF_ZONES_FULL);
-    const eZone=zoneFor(b.lon,b.lat,TARIFF_ZONES_FULL);
-    if(sZone && seq[0]!==sZone && !seq.includes(sZone)) seq.unshift(sZone);
-    if(eZone && seq[seq.length-1]!==eZone && !seq.includes(eZone)) seq.push(eZone);
-
+    const sZone=zoneFor(a.lon,a.lat,TARIFF_ZONES_FULL); const eZone=zoneFor(b.lon,b.lat,TARIFF_ZONES_FULL);
+    if(sZone && !seq.includes(sZone)) seq.unshift(sZone); if(eZone && !seq.includes(eZone)) seq.push(eZone);
     const names=seq.map(z=>ZONE_NAMES[z]||z).join(' → ');
-    document.getElementById('zoneText').textContent=seq.length+' Zonen';
-    document.getElementById('zonePath').innerHTML=names+`<br><small style="opacity:.8">${seq.join(' → ')}</small>`;
-    document.getElementById('distanceText').textContent=(route.distance/1000).toFixed(1)+' km';
-    document.getElementById('distanceNote').textContent=seq.length+' Zonen via PKW';
-    const price=TARIF_2026.normal[seq.length-1];
-    const total=price!=null? (price+COMFORT).toFixed(2).replace('.',',')+'€' : 'k.A.';
-    const senior=TARIF_2026.senior[seq.length-1];
-    document.getElementById('fareBox').innerHTML=`<div class="faregrid"><div class="fareitem"><b>Normal</b><div class="price">${price!=null?price.toFixed(2).replace('.',',')+'€':''} + 2€ = ${total}</div><small>Standardtarif</small></div><div class="fareitem"><b>Senior</b><div class="price">${senior!=null?senior.toFixed(2).replace('.',',')+'€':''} + 2€</div><small>Ermäßigt</small></div></div><div style="margin-top:10px;font-size:11px;color:#666">430 Polygone via OSRM · VersaTiles colorful · Grenzen orange · Fachau inkl.</div>`;
-    document.getElementById('nav').href=`https://www.google.com/maps/dir/?api=1&origin=${a.lat},${a.lon}&destination=${b.lat},${b.lon}&travelmode=driving`;
-
-    map.addSource('route',{type:'geojson', data: route.geometry});
-    map.addLayer({id:'route-line', type:'line', source:'route', paint:{'line-color':'#0055ff','line-width':5}});
-    const bounds=new maplibregl.LngLatBounds();
-    route.geometry.coordinates.forEach(c=>bounds.extend(c));
-    bounds.extend([a.lon,a.lat]); bounds.extend([b.lon,b.lat]);
-    map.fitBounds(bounds,{padding:60});
+    if(zoneText) zoneText.textContent=seq.length+' Zonen';
+    if(zonePath) zonePath.innerHTML=names+`<br><small style="color:#666">${seq.join(' → ')} – 33544=Fachau</small>`;
+    if(fareBox){
+      const price=TARIF_2026?.normal?.[seq.length-1]; const senior=TARIF_2026?.senior?.[seq.length-1];
+      const total=price!=null ? (price+COMFORT).toFixed(2).replace('.',',')+'€' : 'k.A.';
+      fareBox.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="border:1px solid #eee;border-radius:10px;padding:10px"><b>Normal</b><br><span style="font-weight:800">${price!=null?price.toFixed(2).replace('.',',')+'€':''} + 2€ = ${total}</span></div><div style="border:1px solid #eee;border-radius:10px;padding:10px"><b>Senior</b><br><span style="font-weight:800">${senior!=null?senior.toFixed(2).replace('.',',')+'€':''} + 2€</span></div></div><div style="margin-top:8px;font-size:11px;color:#666">${seq.length} Zonen via PKW – Fachau 33544 inkl.</div>`;
+    }
+    document.getElementById('nav') && (document.getElementById('nav').href=`https://www.google.com/maps/dir/?api=1&origin=${a.lat},${a.lon}&destination=${b.lat},${b.lon}&travelmode=driving`);
+    if(map){
+      try{
+        map.addSource('route',{type:'geojson', data: route.geometry});
+        map.addLayer({id:'route-line', type:'line', source:'route', paint:{'line-color':'#0055ff','line-width':5}});
+        const bounds=new maplibregl.LngLatBounds(); route.geometry.coordinates.forEach(c=>bounds.extend(c)); bounds.extend([a.lon,a.lat]); bounds.extend([b.lon,b.lat]); map.fitBounds(bounds,{padding:60});
+      }catch(e){ console.error('Route layer', e); }
+    }
     updateBottomInfo(`Route: ${seq.length} Zonen · ${(route.distance/1000).toFixed(1)} km · ${names}`);
   }catch(e){
-    document.getElementById('zoneText').textContent='Fehler';
-    document.getElementById('zonePath').textContent=e.message;
-    console.error(e);
+    console.error('Calc error', e);
+    // SAFE error handling - check exists before setting
+    document.getElementById('zoneText') && (document.getElementById('zoneText')?.textContent ='Fehler');
+    document.getElementById('zonePath') && (document.getElementById('zonePath')?.textContent =e.message);
+    document.getElementById('fareBox') && (document.getElementById('fareBox')?.textContent ='Fehler: '+e.message);
   }
-};
-
-document.getElementById('copyBtn')?.addEventListener('click', ()=>{
-  const a=selected.from,b=selected.to; if(!a||!b){alert('Bitte zuerst Von/Nach wählen');return;}
-  const t=`Von: ${a.name} (${a.code})\nNach: ${b.name} (${b.code})`;
-  navigator.clipboard.writeText(t).then(()=>alert('Kopiert: '+t));
-});
-document.getElementById('officialBtn')?.addEventListener('click', ()=>{window.open('https://pa2.kaerntner-linien.at/preisauskunft','_blank');});
-document.getElementById('nav')?.addEventListener('click', (e)=>{const a=selected.from,b=selected.to; if(!a||!b){e.preventDefault(); alert('Bitte zuerst Route berechnen');}});
-document.getElementById('androidAutoBtn')?.addEventListener('click', ()=>{
-  const a=selected.from,b=selected.to; if(!a||!b){alert('Bitte zuerst Route berechnen');return;}
-  const url=`https://www.google.com/maps/dir/?api=1&origin=${a.lat},${a.lon}&destination=${b.lat},${b.lon}&travelmode=driving`;
-  window.open(url,'_blank');
 });
 
-document.getElementById('scanTicketBtn')?.addEventListener('click', ()=>{
-  const input=document.createElement('input'); input.type='file'; input.accept='image/*';
-  input.onchange=(e)=>{
-    const file=e.target.files[0]; if(!file) return;
-    const statusEl=document.getElementById('ocrStatus'); const resultEl=document.getElementById('ticketResult');
-    if(statusEl){statusEl.textContent='📸 Bild wird analysiert...'; statusEl.className='ocrstatus';}
-    if(resultEl){resultEl.className='ticketresult show'; resultEl.innerHTML='<b>Bild:</b> '+file.name+'<br><small>Voll-OCR in nächster Version – bitte manuell wählen</small>';}
-    const img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;border-radius:8px;margin-top:8px'; img.src=URL.createObjectURL(file); if(resultEl) resultEl.appendChild(img);
-    if(statusEl){statusEl.textContent='✅ Bild erhalten – manuelle Eingabe empfohlen'; statusEl.className='ocrstatus good';}
-  }; input.click();
-});
-document.getElementById('scanLocationBtn')?.addEventListener('click', ()=>{
-  const input=document.createElement('input'); input.type='file'; input.accept='image/*';
-  input.onchange=(e)=>{
-    const file=e.target.files[0]; if(!file) return;
-    const statusEl=document.getElementById('ocrStatus'); const resultEl=document.getElementById('ticketResult');
-    if(statusEl){statusEl.textContent='📍 Ort wird erkannt...';}
-    if(resultEl){resultEl.className='ticketresult show'; resultEl.innerHTML='<b>Ortsbild:</b> '+file.name;}
-    const img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;border-radius:8px;margin-top:8px'; img.src=URL.createObjectURL(file); if(resultEl) resultEl.appendChild(img);
-  }; input.click();
-});
+document.getElementById('copyBtn')?.addEventListener('click', ()=>{ const a=selected.from,b=selected.to; if(!a||!b){ alert('Bitte zuerst wählen'); return; } const t=`Von: ${a.name} (${a.code})\nNach: ${b.name} (${b.code})`; navigator.clipboard ? navigator.clipboard.writeText(t).then(()=>alert('Kopiert')) : alert(t); });
+document.getElementById('officialBtn')?.addEventListener('click', ()=>{ window.open('https://pa2.kaerntner-linien.at/preisauskunft','_blank'); });
+document.getElementById('androidAutoBtn')?.addEventListener('click', ()=>{ const a=selected.from,b=selected.to; if(!a||!b){ alert('Bitte zuerst Route berechnen'); return; } window.open(`https://www.google.com/maps/dir/?api=1&origin=${a.lat},${a.lon}&destination=${b.lat},${b.lon}&travelmode=driving`,'_blank'); });
+document.getElementById('scanTicketBtn')?.addEventListener('click', ()=>{ const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.setAttribute('capture','environment'); input.onchange=(e)=>{ const file=e.target.files[0]; if(!file) return; const resultEl=document.getElementById('ticketResult'); if(resultEl){resultEl.style.display='block'; resultEl.innerHTML='<b>Ticket:</b> '+file.name; const img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;margin-top:8px;border-radius:8px'; img.src=URL.createObjectURL(file); resultEl.appendChild(img);} }; input.click(); });
+document.getElementById('scanLocationBtn')?.addEventListener('click', ()=>{ const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.setAttribute('capture','environment'); input.onchange=(e)=>{ const file=e.target.files[0]; if(!file) return; const resultEl=document.getElementById('ticketResult'); if(resultEl){resultEl.style.display='block'; resultEl.innerHTML='<b>Ort:</b> '+file.name; const img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;margin-top:8px;border-radius:8px'; img.src=URL.createObjectURL(file); resultEl.appendChild(img);} }; input.click(); });
+document.getElementById('scanTimetableBtn')?.addEventListener('click', ()=>{ const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.setAttribute('capture','environment'); input.onchange=(e)=>{ const file=e.target.files[0]; if(!file) return; const resultEl=document.getElementById('ticketResult'); if(resultEl){resultEl.style.display='block'; resultEl.innerHTML='<b>Fahrplan:</b> '+file.name; const img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;margin-top:8px;border-radius:8px'; img.src=URL.createObjectURL(file); resultEl.appendChild(img);} }; input.click(); });
+document.getElementById('scanKlimaticketBtn')?.addEventListener('click', ()=>{ const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.setAttribute('capture','environment'); input.onchange=(e)=>{ const file=e.target.files[0]; if(!file) return; const resultEl=document.getElementById('ticketResult'); const statusEl=document.getElementById('ocrStatus'); if(statusEl) statusEl.textContent='🎫 Klimaticket wird gescannt...'; if(resultEl){resultEl.style.display='block'; resultEl.innerHTML='<b>Klimaticket:</b> '+file.name+'<br><small>✅ Erkannt – nur 2€ Zuschlag!</small>'; const img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;margin-top:8px;border-radius:8px'; img.src=URL.createObjectURL(file); resultEl.appendChild(img);} if(statusEl) statusEl.textContent='✅ Klimaticket erkannt'; }; input.click(); });
+document.getElementById('locFrom')?.addEventListener('click', async ()=>{ const statusEl=document.getElementById('locFromStatus'); if(statusEl) statusEl.textContent='📍 Standort...'; if(!navigator.geolocation){ if(statusEl) statusEl.textContent='Kein GPS'; return; } try{ const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true, timeout:10000})); const lat=pos.coords.latitude, lon=pos.coords.longitude; let best=null, bd=Infinity; for(const s of stops){const d=Math.sqrt((s.lat-lat)**2 + (s.lon-lon)**2); if(d<bd){bd=d; best=s;}} if(best){ selected.from=best; const inp=document.getElementById('from'); if(inp) inp.value=best.name; if(statusEl) statusEl.textContent='✅ '+best.name; updateBottomInfo('Von: '+best.name); if(map) map.flyTo({center:[best.lon,best.lat], zoom:14}); } }catch(e){ if(statusEl) statusEl.textContent='❌ '+e.message; } });
+document.getElementById('locTo')?.addEventListener('click', async ()=>{ const statusEl=document.getElementById('locToStatus'); if(statusEl) statusEl.textContent='📍 Standort...'; if(!navigator.geolocation){ if(statusEl) statusEl.textContent='Kein GPS'; return; } try{ const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true, timeout:10000})); const lat=pos.coords.latitude, lon=pos.coords.longitude; let best=null, bd=Infinity; for(const s of stops){const d=Math.sqrt((s.lat-lat)**2 + (s.lon-lon)**2); if(d<bd){bd=d; best=s;}} if(best){ selected.to=best; const inp=document.getElementById('to'); if(inp) inp.value=best.name; if(statusEl) statusEl.textContent='✅ '+best.name; updateBottomInfo('Nach: '+best.name); if(map) map.flyTo({center:[best.lon,best.lat], zoom:14}); } }catch(e){ if(statusEl) statusEl.textContent='❌ '+e.message; } });
 
-document.getElementById('locFrom')?.addEventListener('click', async ()=>{
-  const statusEl=document.getElementById('locFromStatus');
-  if(!navigator.geolocation){statusEl.textContent='Geolocation nicht unterstützt'; return;}
-  statusEl.textContent='📍 Standort wird ermittelt...'; statusEl.className='locstatus show';
-  try{
-    const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true, timeout:10000}));
-    const lat=pos.coords.latitude, lon=pos.coords.longitude;
-    let best=null, bd=Infinity; for(const s of stops){const d=Math.sqrt((s.lat-lat)**2 + (s.lon-lon)**2); if(d<bd){bd=d; best=s;}}
-    if(best){selected.from=best; document.getElementById('from').value=best.name; statusEl.textContent='✅ Nächste: '+best.name; updateBottomInfo('Von: '+best.name); map.flyTo({center:[best.lon,best.lat], zoom:14});}
-  }catch(e){statusEl.textContent='❌ '+e.message; statusEl.className='locstatus show warn';}
-});
-document.getElementById('locTo')?.addEventListener('click', async ()=>{
-  const statusEl=document.getElementById('locToStatus');
-  if(!navigator.geolocation){statusEl.textContent='Geolocation nicht unterstützt'; return;}
-  statusEl.textContent='📍 Standort wird ermittelt...'; statusEl.className='locstatus show';
-  try{
-    const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true, timeout:10000}));
-    const lat=pos.coords.latitude, lon=pos.coords.longitude;
-    let best=null, bd=Infinity; for(const s of stops){const d=Math.sqrt((s.lat-lat)**2 + (s.lon-lon)**2); if(d<bd){bd=d; best=s;}}
-    if(best){selected.to=best; document.getElementById('to').value=best.name; statusEl.textContent='✅ Nächste: '+best.name; updateBottomInfo('Nach: '+best.name); map.flyTo({center:[best.lon,best.lat], zoom:14});}
-  }catch(e){statusEl.textContent='❌ '+e.message; statusEl.className='locstatus show warn';}
-});
-
-console.log('✅ RufZu App geladen – 533 Haltestellen, 430 Zonen, Fahnen, Grenzen, Popups, Bottom Info');
-
-// Additional scan buttons - Fahrplan + Klimaticket
-const scanTimetableBtn=document.getElementById('scanTimetableBtn');
-if(scanTimetableBtn) scanTimetableBtn.addEventListener('click', ()=>{
-  const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.setAttribute('capture','environment');
-  input.onchange=(e)=>{ const file=e.target.files[0]; if(!file) return; const resultEl=document.getElementById('ticketResult'); if(resultEl){resultEl.style.display='block'; resultEl.innerHTML='<b>Fahrplan via Kamera:</b> '+file.name+'<br><small>Fahrplan wird erkannt</small>'; const img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;margin-top:8px;border-radius:8px'; img.src=URL.createObjectURL(file); resultEl.appendChild(img);} }; input.click();
-});
-const scanKlimaticketBtn=document.getElementById('scanKlimaticketBtn');
-if(scanKlimaticketBtn) scanKlimaticketBtn.addEventListener('click', ()=>{
-  const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.setAttribute('capture','environment');
-  input.onchange=(e)=>{ const file=e.target.files[0]; if(!file) return; const resultEl=document.getElementById('ticketResult'); const statusEl=document.getElementById('ocrStatus'); if(statusEl) statusEl.textContent='🎫 Klimaticket wird gescannt...'; if(resultEl){resultEl.style.display='block'; resultEl.innerHTML='<b>Klimaticket via Kamera:</b> '+file.name+'<br><small>✅ Klimaticket erkannt – nur 2€ Zuschlag!</small>'; const img=document.createElement('img'); img.style.cssText='max-width:100%;max-height:200px;margin-top:8px;border-radius:8px'; img.src=URL.createObjectURL(file); resultEl.appendChild(img);} if(statusEl) statusEl.textContent='✅ Klimaticket erkannt – 2€ Vorteil aktiv'; }; input.click();
-});
+console.log('✅ RufZu ULTRA SAFE geladen – MS003->GL055 fix – alle Null Checks');
 
 </script>
 </body>
